@@ -3,4 +3,4 @@ when:
   - os in ["macos", "linux"]
   - declaration == "files"
 
-executable: plugin.sh
+executable: files.sh

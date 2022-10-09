@@ -1,0 +1,6 @@
+name: sudoers
+when:
+  - os == "macos"
+  - declaration == "sudoers"
+
+executable: sudoers.sh

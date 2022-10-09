@@ -107,7 +107,7 @@ files::provision()
 
         # if source does not existing or isn't listable
         if [[ ! -e "$source_" || ( -d "$source_" && ! -x "$source_" ) ]]; then
-            declare output
+            declare output=''
             if [[ ! -e "$source_" ]]; then
                 output="${source_} does not exist"
             else
@@ -139,7 +139,7 @@ files::provision()
             # provision file
             declare status='success'
             declare changed='false'
-            declare output
+            declare output=''
             if ! nk::run_for_output output "files::_provision_file"; then
                 status='failed'
             fi
