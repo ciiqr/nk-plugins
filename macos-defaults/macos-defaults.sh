@@ -95,6 +95,15 @@ defaults::_provision_default() {
     declare domain_file
     domain_file="$(default::_domain_file)"
 
+    # infer root
+    if [[ -z "$root" ]]; then
+        if [[ "$(stat -f "%u" "$domain_file")" == '0' ]]; then
+            root='true'
+        else
+            root='false'
+        fi
+    fi
+
     # comparable value
     declare comparable_value="$value"
 
@@ -142,9 +151,14 @@ defaults::_provision_default() {
 
     # write default
     if [[ "$previous_value" != "$comparable_value" ]]; then
+        declare -a sudo_if_needed=()
+        if [[ "$root" == 'true' ]]; then
+            sudo_if_needed+=('sudo')
+        fi
+
         if [[ "$type" == 'dict' ]]; then
             # TODO: evaluate what this would look like with `defaults write`, I suspect this is just strictly easier...
-            plutil -replace "$name" -json "$value" "$domain_file"
+            "${sudo_if_needed[@]}" plutil -replace "$name" -json "$value" "$domain_file"
         else
             declare value_args=()
             if [[ "$type" == 'array' ]]; then
@@ -156,7 +170,7 @@ defaults::_provision_default() {
                 value_args+=("$value")
             fi
 
-            defaults write \
+            "${sudo_if_needed[@]}" defaults write \
                 "$domain" \
                 "$name" \
                 "-${type}" \
@@ -187,11 +201,8 @@ defaults::provision() {
         # # NOTE: compact & sorted keys to simplify comparing to existing value
         # value="$(jq --compact-output --sort-keys -r '.value' <<< "$state")"
 
-        # declare root # TODO: implied if plist is owned by root? (may also want to check if writable...)
-        # # x NSGlobalDomain = ~/Library/Preferences/.GlobalPreferences.plist
-        # # - ~/Library/Preferences/{domain}.plist
-        # # - /Library/Preferences/{domain}.plist
-        # # x com.apple.TextEdit.plist = ~/Library/Containers/com.apple.TextEdit/Data/Library/Preferences/com.apple.TextEdit.plist
+        declare root=''
+        # TODO: unsure if we'll need
         # root="$(jq -r 'if has("root") then .root else "" end' <<< "$state")"
 
         declare resets # ie. Finder / Dock / etc
