@@ -1,0 +1,6 @@
+name: macos-hide
+when:
+  - os == "macos"
+  - declaration == "macos.hide"
+
+executable: macos-hide.sh

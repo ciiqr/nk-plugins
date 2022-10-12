@@ -46,7 +46,7 @@ sudoers::_sudo_or_promote_to_root() {
         return 0
     fi
 
-    # TODO: need to setup parsing of cli args, then we can enable the below hack
+    # TODO: need to setup parsing of cli args, then we can enable the below hack (macos only obvs)
     # TODO: alternatively, figure out something in nk directly to promote (maybe just running `sudo true` before provisioning so the user can actually input something)
     return 1
 
@@ -123,6 +123,6 @@ case "$1" in
         ;;
     *)
         echo "sudoers: unrecognized subcommand ${1}" 1>&2
-        return 1
+        exit 1
         ;;
 esac

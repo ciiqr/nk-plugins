@@ -1,0 +1,6 @@
+name: macos-terminal-theme
+when:
+  - os == "macos"
+  - declaration == "macos.terminal.theme"
+
+executable: macos-terminal-theme.sh
