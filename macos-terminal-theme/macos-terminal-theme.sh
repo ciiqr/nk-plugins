@@ -5,6 +5,7 @@ set -e
 eval "$(nk plugin bash 2>/dev/null)"
 
 terminal_theme::get_default_theme() {
+    # TODO: instead of first window, try using current window (I believe the background window might be causing issues with this rn)
     osascript <<<'tell application "Terminal" to return name of current settings of first window'
 }
 

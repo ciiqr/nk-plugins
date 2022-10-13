@@ -1,0 +1,6 @@
+name: brew
+when:
+  - os == "macos"
+  - declaration == "packages"
+
+executable: brew.sh
