@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -9,15 +10,15 @@ sudoers::_provision_file() {
     declare config="$2"
 
     # check config
-    visudo --check --strict --file=- <<<"$config"
+    visudo --check --strict --file=- <<<"$config" || return "$?"
 
     # get existing contents
     declare existing_contents
-    existing_contents="$(sudo cat "$file" 2>/dev/null)"
+    existing_contents="$(sudo cat "$file" 2>/dev/null)" || return "$?"
 
     # create config
     if [[ "$existing_contents" != "$config" ]]; then
-        sudo tee "$file" >/dev/null <<<"$config"
+        sudo tee "$file" >/dev/null <<<"$config" || return "$?"
         changed='true'
     fi
 }
@@ -30,13 +31,13 @@ sudoers::_provision_mode() {
     fi
 
     # create user config
-    sudoers::_provision_file "/etc/sudoers.d/user-${USER}" "$user_config"
+    sudoers::_provision_file "/etc/sudoers.d/user-${USER}" "$user_config" || return "$?"
 }
 
 sudoers::_provision_defaults() {
     # TODO: remove/fix "templating"
     # create defaults config
-    sudoers::_provision_file "/etc/sudoers.d/defaults" "$(sed -E 's@\{\{ user \}\}@'"$USER"'@' <<<"$defaults")"
+    sudoers::_provision_file "/etc/sudoers.d/defaults" "$(sed -E 's@\{\{ user \}\}@'"$USER"'@' <<<"$defaults")" || return "$?"
 }
 
 sudoers::_sudo_or_promote_to_root() {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -68,7 +69,7 @@ pmset::_provision_value() {
         fi
 
         # set
-        pmset "$source_flag" "$name" "$value"
+        pmset "$source_flag" "$name" "$value" || return "$?"
         changed='true'
     fi
 }

@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
 
 terminal_theme::get_default_theme() {
     # TODO: instead of first window, try using current window (I believe the background window might be causing issues with this rn)
-    osascript <<<'tell application "Terminal" to return name of current settings of first window'
+    osascript <<<'tell application "Terminal" to return name of current settings of first window' || return "$?"
 }
 
 terminal_theme::set_default_theme() {
-    osascript - "$@" <<'EOF'
+    osascript - "$@" <<'EOF' || return "$?"
         on run argv
             tell application "Terminal"
                 local allOpenWindows
@@ -56,14 +57,14 @@ EOF
 
 terminal_theme::_provision_theme() {
     declare theme_name
-    theme_name="$(/usr/libexec/PlistBuddy -c "Print :name" "$theme_path")"
+    theme_name="$(/usr/libexec/PlistBuddy -c "Print :name" "$theme_path")" || return "$?"
 
     declare current_theme
-    current_theme="$(terminal_theme::get_default_theme)"
+    current_theme="$(terminal_theme::get_default_theme)" || return "$?"
 
     if [[ "$current_theme" != "$theme_name" ]]; then
         # change theme
-        terminal_theme::set_default_theme "$theme_name" "$theme_path"
+        terminal_theme::set_default_theme "$theme_name" "$theme_path" || return "$?"
         changed='true'
     fi
 }

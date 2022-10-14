@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -8,19 +9,25 @@ eval "$(nk plugin bash 2>/dev/null)"
 brew::_provision_package() {
     # get info on the package
     declare brew_info
-    brew_info="$(brew info --json=v2 "$package")"
+    brew_info="$(brew info --json=v2 "$package")" || return "$?"
 
     # formula
     declare installed
     declare package_info
-    package_info="$(jq --arg 'name' "$package" '.formulae[] | select(.name == $name or .full_name == $name or any(.aliases[]; . == $name))' <<<"$brew_info")"
+    package_info="$(
+        jq \
+            --arg 'name' "$package" \
+            '.formulae[] | select(.name == $name or .full_name == $name or any(.aliases[]; . == $name))' \
+            <<<"$brew_info"
+    )" || return "$?"
+
     if [[ -n "$package_info" ]]; then
-        installed="$(jq '.installed[]' <<<"$package_info")"
+        installed="$(jq '.installed[]' <<<"$package_info")" || return "$?"
     else
         # cask
         declare cask_name="${package##*/}"
-        package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<<"$brew_info")"
-        installed="$(jq '.installed' <<<"$package_info")"
+        package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<<"$brew_info")" || return "$?"
+        installed="$(jq '.installed' <<<"$package_info")" || return "$?"
     fi
 
     # ensure package exists
@@ -31,12 +38,12 @@ brew::_provision_package() {
 
     if [[ -z "$installed" ]]; then
         # install
-        brew install "$package"
+        brew install "$package" || return "$?"
         changed='true'
         action='install'
     elif ! brew outdated --greedy "$package" >/dev/null; then
         # upgrade
-        brew upgrade "$package"
+        brew upgrade "$package" || return "$?"
         changed='true'
         action='upgrade'
     fi

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -10,12 +11,12 @@ show::_hex_to_decimal() {
 
 show::_provision_path() {
     declare flags
-    flags="$(stat -f '%f' "$resolved_path")"
+    flags="$(stat -f '%f' "$resolved_path")" || return "$?"
 
     # show path
     if (((flags & UF_HIDDEN) != 0)); then
         # show
-        chflags nohidden "$resolved_path"
+        chflags nohidden "$resolved_path" || return "$?"
 
         # update state
         changed='true'

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -29,18 +30,18 @@ files::_provision_file() {
         if [[ ! -d "$destination_file" ]]; then
             # delete existing first
             if [[ -e "$destination_file" ]]; then
-                rm -rf "$destination_file"
+                rm -rf "$destination_file" || return "$?"
                 changed='true'
             fi
 
             # create directory
-            mkdir "$destination_file"
+            mkdir "$destination_file" || return "$?"
             changed='true'
         fi
 
         # chmod directory
         if [[ "$(files::_perms "$destination_file")" != '700' ]]; then
-            chmod 0700 "$destination_file"
+            chmod 0700 "$destination_file" || return "$?"
             changed='true'
         fi
     elif [[ "$link_files" == 'true' ]]; then
@@ -48,30 +49,30 @@ files::_provision_file() {
         if [[ "$(files::_file_identity "$destination_file")" != "$(files::_file_identity "$source_file")" ]]; then
             # delete existing first
             if [[ -d "$destination_file" ]]; then
-                rm -rf "$destination_file"
+                rm -rf "$destination_file" || return "$?"
                 changed='true'
             fi
 
             # link file
-            ln -sf "${PWD}/${source_file}" "$destination_file"
+            ln -sf "${PWD}/${source_file}" "$destination_file" || return "$?"
             changed='true'
         fi
     else
         declare source_contents
-        source_contents="$(cat "$source_file")"
+        source_contents="$(cat "$source_file")" || return "$?"
         declare destination_contents
-        destination_contents="$(cat "$destination_file" 2>/dev/null)"
+        destination_contents="$(cat "$destination_file" 2>/dev/null)" || return "$?"
 
         # create file
         if [[ "$destination_contents" != "$source_contents" || -L "$destination_file" ]]; then
             # delete existing first
             if [[ -d "$destination_file" || -L "$destination_file" ]]; then
-                rm -rf "$destination_file"
+                rm -rf "$destination_file" || return "$?"
                 changed='true'
             fi
 
             # copy file
-            cp "$source_file" "$destination_file"
+            cp "$source_file" "$destination_file" || return "$?"
             changed='true'
         fi
 
@@ -84,7 +85,7 @@ files::_provision_file() {
 
         # chmod file
         if [[ "$(files::_perms "$destination_file")" != "$perms" ]]; then
-            chmod "$perms" "$destination_file"
+            chmod "$perms" "$destination_file" || return "$?"
             changed='true'
         fi
     fi

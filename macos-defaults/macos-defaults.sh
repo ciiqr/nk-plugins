@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
@@ -60,7 +61,7 @@ defaults::_provision_default() {
             *)
                 # infer type from value type
                 declare json_type
-                json_type="$(jq -r '.value | type' <<< "$state")"
+                json_type="$(jq -r '.value | type' <<< "$state")" || return "$?"
                 case "$json_type" in
                     array)
                         type='array'
@@ -93,7 +94,7 @@ defaults::_provision_default() {
 
     # get domain plist file
     declare domain_file
-    domain_file="$(default::_domain_file)"
+    domain_file="$(default::_domain_file)" || return "$?"
 
     # infer root
     if [[ -z "$root" ]]; then
@@ -109,7 +110,7 @@ defaults::_provision_default() {
 
     # previous value
     declare previous_value
-    previous_value="$(defaults read "$domain" "$name" 2>/dev/null || true)"
+    previous_value="$(defaults read "$domain" "$name" 2>/dev/null)" # failures intentionally ignored
 
     # parse
     case "$type" in
@@ -120,18 +121,18 @@ defaults::_provision_default() {
             # previous_value="$(plutil -extract "$name" json -o - "$domain_file" | jq --compact-output --sort-keys -r '.')"
 
             # format previous value
-            previous_value="$(/usr/libexec/PlistBuddy -c "Print :${name}" "$domain_file" 2>/dev/null || true)"
+            previous_value="$(/usr/libexec/PlistBuddy -c "Print :${name}" "$domain_file" 2>/dev/null)" # failures intentionally ignored
 
             # format new value
-            plutil -convert xml1 -r -o - -- - <<< "$value" > "$temp_value_format_file"
-            comparable_value="$(/usr/libexec/PlistBuddy -c "Print" "$temp_value_format_file")"
+            plutil -convert xml1 -r -o - -- - <<< "$value" > "$temp_value_format_file" || return "$?"
+            comparable_value="$(/usr/libexec/PlistBuddy -c "Print" "$temp_value_format_file")" || return "$?"
 
             # NOTE: this is pretty dumb, but the order of keys is different, so
             # we need to sort these to be able to compare (is fine as long as we
             # only need to compare these values and nothing else...)
             if [[ "$type" == 'dict' ]]; then
-                previous_value="$(sort <<< "$previous_value")"
-                comparable_value="$(sort <<< "$comparable_value")"
+                previous_value="$(sort <<< "$previous_value")" || return "$?"
+                comparable_value="$(sort <<< "$comparable_value")" || return "$?"
             fi
         ;;
         bool)
@@ -158,7 +159,7 @@ defaults::_provision_default() {
 
         if [[ "$type" == 'dict' ]]; then
             # TODO: evaluate what this would look like with `defaults write`, I suspect this is just strictly easier...
-            "${sudo_if_needed[@]}" plutil -replace "$name" -json "$value" "$domain_file"
+            "${sudo_if_needed[@]}" plutil -replace "$name" -json "$value" "$domain_file" || return "$?"
         else
             declare value_args=()
             if [[ "$type" == 'array' ]]; then
@@ -174,7 +175,7 @@ defaults::_provision_default() {
                 "$domain" \
                 "$name" \
                 "-${type}" \
-                "${value_args[@]}"
+                "${value_args[@]}" || return "$?"
         fi
 
         changed='true'
