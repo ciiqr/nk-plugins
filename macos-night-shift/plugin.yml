@@ -1,0 +1,6 @@
+name: macos-night-shift
+when:
+  - os == "macos"
+  - declaration == "macos.night-shift"
+
+executable: macos-night-shift.sh

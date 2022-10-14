@@ -33,10 +33,12 @@ brew::_provision_package() {
         # install
         brew install "$package"
         changed='true'
+        action='install'
     elif ! brew outdated --greedy "$package" >/dev/null; then
         # upgrade
         brew upgrade "$package"
         changed='true'
+        action='upgrade'
     fi
 }
 
@@ -64,6 +66,7 @@ brew::provision() {
     # update brew (required to know about new versions of packages)
     declare output=''
     if ! nk::run_for_output output brew update --auto-update; then
+        # TODO: maybe just always log unchanged?
         # NOTE: only log if it fails
         declare status='failed'
         declare changed='false'
@@ -78,6 +81,8 @@ brew::provision() {
 
     # provision packages
     for package in "${packages[@]}"; do
+        declare action='install'
+
         declare status='success'
         declare changed='false'
         declare output=''
@@ -88,7 +93,7 @@ brew::provision() {
         nk::log_result \
             "$status" \
             "$changed" \
-            "package $package" \
+            "${action} package $package" \
             "$output"
     done
 }

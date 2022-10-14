@@ -10,7 +10,7 @@ terminal_theme::get_default_theme() {
 }
 
 terminal_theme::set_default_theme() {
-    osascript - "$@" <<EOF
+    osascript - "$@" <<'EOF'
         on run argv
             tell application "Terminal"
                 local allOpenWindows
