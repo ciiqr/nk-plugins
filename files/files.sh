@@ -41,7 +41,7 @@ files::_provision_file() {
 
         # chmod directory
         if [[ "$(files::_perms "$destination_file")" != '700' ]]; then
-            chmod 0700 "$destination_file" || return "$?"
+            chmod 700 "$destination_file" || return "$?"
             changed='true'
         fi
     elif [[ "$link_files" == 'true' ]]; then
@@ -78,9 +78,9 @@ files::_provision_file() {
 
         # determine perms to set
         if [[ -x "$source_file" ]]; then
-            declare perms='0700'
+            declare perms='700'
         else
-            declare perms='0600'
+            declare perms='600'
         fi
 
         # chmod file
