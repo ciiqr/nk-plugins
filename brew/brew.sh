@@ -42,10 +42,10 @@ brew::_provision_package() {
         changed='true'
         action='install'
     elif ! brew outdated --greedy "$package" >/dev/null; then
-        # upgrade
+        # update
         brew upgrade "$package" || return "$?"
         changed='true'
-        action='upgrade'
+        action='update'
     fi
 }
 
