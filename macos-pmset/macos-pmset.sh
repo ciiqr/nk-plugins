@@ -69,7 +69,7 @@ pmset::_provision_value() {
         fi
 
         # set
-        pmset "$source_flag" "$name" "$value" || return "$?"
+        sudo pmset "$source_flag" "$name" "$value" || return "$?"
         changed='true'
     fi
 }
