@@ -15,8 +15,13 @@ show::_provision_path() {
 
     # show path
     if (((flags & UF_HIDDEN) != 0)); then
+        declare -a sudo_if_needed=()
+        if [[ "$(stat -f "%u" "$resolved_path")" == '0' ]]; then
+            sudo_if_needed+=('sudo')
+        fi
+
         # show
-        chflags nohidden "$resolved_path" || return "$?"
+        "${sudo_if_needed[@]}" chflags nohidden "$resolved_path" || return "$?"
 
         # update state
         changed='true'
