@@ -1,0 +1,6 @@
+name: macos-default-programs
+when:
+  - os == "macos"
+  - declaration == "default.programs"
+
+executable: macos-default-programs.sh
