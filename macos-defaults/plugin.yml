@@ -1,6 +1,7 @@
 name: macos-defaults
-when:
-  - os == "macos"
-  - declaration == "macos.defaults"
+when: os == "macos"
+
+provision:
+  when: declaration == "macos.defaults"
 
 executable: macos-defaults.sh

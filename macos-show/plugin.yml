@@ -1,6 +1,7 @@
 name: macos-show
-when:
-  - os == "macos"
-  - declaration == "macos.show"
+when: os == "macos"
+
+provision:
+  when: declaration == "macos.show"
 
 executable: macos-show.sh

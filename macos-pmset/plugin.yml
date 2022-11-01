@@ -1,6 +1,7 @@
 name: macos-pmset
-when:
-  - os == "macos"
-  - declaration == "macos.pmset"
+when: os == "macos"
+
+provision:
+  when: declaration == "macos.pmset"
 
 executable: macos-pmset.sh

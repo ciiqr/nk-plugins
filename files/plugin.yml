@@ -1,6 +1,7 @@
 name: files
-when:
-  - os in ["macos", "linux"]
-  - declaration == "files"
+when: os in ["macos", "linux"]
+
+provision:
+  when: declaration == "files"
 
 executable: files.sh
