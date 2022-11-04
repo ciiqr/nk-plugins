@@ -37,7 +37,7 @@ hide::provision() {
     while read -r path; do
         # replace tilde
         declare resolved_path
-        resolved_path="${path/#~/"$HOME"}"
+        resolved_path="${path/#~/$HOME}"
 
         # provision
         declare status='success'

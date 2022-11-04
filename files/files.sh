@@ -104,7 +104,7 @@ files::provision()
 
         # replace tilde
         declare resolved_destination
-        resolved_destination="${destination/#~/"$HOME"}"
+        resolved_destination="${destination/#~/$HOME}"
 
         # if source does not existing or isn't listable
         if [[ ! -e "$source_" || ( -d "$source_" && ! -x "$source_" ) ]]; then
