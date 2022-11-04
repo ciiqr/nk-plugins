@@ -45,12 +45,12 @@ brew::_provision_package() {
 
     if [[ -z "$installed" ]]; then
         # install
-        brew install "$package" || return "$?"
+        brew install --no-quarantine "$package" || return "$?"
         changed='true'
         action='install'
     elif ! brew outdated --greedy "$package" >/dev/null; then
         # update
-        brew upgrade "$package" || return "$?"
+        brew upgrade --no-quarantine "$package" || return "$?"
         changed='true'
         action='update'
     fi
