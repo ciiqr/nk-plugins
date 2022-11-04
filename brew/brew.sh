@@ -5,8 +5,15 @@ set -e
 
 eval "$(nk plugin bash 2>/dev/null)"
 
-# TODO: might need to `brew tap` for some packages ie. `brew tap homebrew/cask`
 brew::_provision_package() {
+    # tap
+    if [[ "$package" == *'/'* ]]; then
+        declare tap="${package%'/'*}"
+        if ! nk::array::contains "$tap" "${taps[@]}"; then
+            brew tap "$tap" || return "$?"
+        fi
+    fi
+
     # get info on the package
     declare brew_info
     brew_info="$(brew info --json=v2 "$package")" || return "$?"
@@ -55,6 +62,12 @@ brew::provision() {
     while read -r package; do
         packages+=("$package")
     done <<< "$(jq -r --compact-output '.[]')"
+
+    # list all taps
+    declare -a taps=()
+    while read -r tap; do
+        taps+=("$tap")
+    done <<< "$(brew tap -q)"
 
     # TODO: xcode tools
     # if ! xcode-select -p >/dev/null; then
