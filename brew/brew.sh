@@ -116,6 +116,29 @@ brew::provision() {
             "${action} package $package" \
             "$output"
     done
+
+    # cleanup
+    declare status='success'
+    declare output=''
+    if ! nk::run_for_output output brew cleanup --prune=1; then
+        status='failed'
+    fi
+
+    declare changed
+    if [[ "$output" == *'This operation has freed approximately'* ]]; then
+        changed='false'
+    else
+        changed='true'
+    fi
+
+    declare description="brew cleanup"
+
+    # log state details
+    nk::log_result \
+        "$status" \
+        "$changed" \
+        "$description" \
+        "$output"
 }
 
 case "$1" in
