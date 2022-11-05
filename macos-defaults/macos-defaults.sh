@@ -243,11 +243,15 @@ defaults::provision() {
     # reset required programs
     for program in "${programs_to_reset[@]}"; do
         declare status='success'
-        declare changed='true' # NOTE: defaults to true unless it fails, could be wrong either way though
+        declare changed='false'
         declare output=''
-        if ! nk::run_for_output output killall "$program"; then
-            status='failed'
-            changed='false'
+        # if program is running
+        if pgrep "$program"; then
+            changed='true' # NOTE: defaults to true if program is running (unless it fails), could be wrong either way though
+            if ! nk::run_for_output output killall "$program"; then
+                status='failed'
+                changed='false'
+            fi
         fi
 
         declare description="reset ${program}"
