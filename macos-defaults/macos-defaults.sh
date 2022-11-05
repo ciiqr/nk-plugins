@@ -31,7 +31,9 @@ default::_domain_file() {
         fi
     done
 
-    return 1
+    # TODO: likely want to handle plist path domains differently
+    # NOTE: if plist cannot be found, create a new one at: ~/Library/Preferences/{domain}.plist (behavior matches `defaults write`)
+    echo "${HOME}/Library/Preferences/${domain_name}.plist"
 }
 
 defaults::_provision_default() {
@@ -159,6 +161,7 @@ defaults::_provision_default() {
 
         if [[ "$type" == 'dict' ]]; then
             # TODO: evaluate what this would look like with `defaults write`, I suspect this is just strictly easier...
+            # TODO: handle $domain_file not existing yet
             "${sudo_if_needed[@]}" plutil -replace "$name" -json "$value" "$domain_file" || return "$?"
         else
             declare value_args=()
