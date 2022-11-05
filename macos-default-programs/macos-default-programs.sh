@@ -6,11 +6,29 @@ set -e
 eval "$(nk plugin bash 2>/dev/null)"
 
 default_programs::_get_app_id() {
-    osascript - "$@" <<'EOF'
-        on run argv
-            return id of app (item 1 of argv)
-        end run
-EOF
+    declare app_name="$1"
+    declare app_path
+    app_path="$(default_programs::_get_app_path "$app_name")" || {
+        echo "app not found: ${app_name}" >&2
+        return 1
+    }
+    declare plist_path="${app_path}/Contents/Info.plist"
+
+    if [[ -f "$plist_path" ]]; then
+        /usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$plist_path" || return "$?"
+    fi
+}
+
+default_programs::_get_app_path() {
+    declare app_name="$1"
+    for app_path in "${app_paths[@]}"; do
+        if [[ "$app_path" == *"/${app_name}.app" ]]; then
+            echo "$app_path"
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 default_programs::_provision_url_schema() {
@@ -61,6 +79,14 @@ default_programs::_provision_default() {
 }
 
 default_programs::provision() {
+    # list all app paths
+    declare -a app_paths=()
+    while read -r app_path; do
+        if [[ "$app_path" == *'.app' ]]; then
+            app_paths+=("$app_path")
+        fi
+    done <<<"$(mdfind -literal 'kMDItemContentType==com.apple.application-bundle')"
+
     while read -r state; do
         while read -r scheme; do
             declare program
