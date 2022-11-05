@@ -22,8 +22,30 @@ files::_file_identity() {
 }
 
 files::_provision_file() {
-    # TODO: decide how to handle a parent of the destination not existing (ie. esp perms...)
-    # - maybe we just add the parent directories to the list of files to create?
+    # TODO: consider refactoring to add the parent directories to the list of files to create?
+    # create parent directory
+    declare destination_parent
+    destination_parent="$(dirname "$destination_file")"
+
+    if [[ ! -d "$destination_parent" ]]; then
+        # create directory
+        mkdir -p "$destination_parent" || {
+            declare retVal="$?"
+            echo "failed creating parent directory: ${destination_parent}" 1>&2
+            return "$retVal"
+        }
+        changed='true'
+
+        # chmod directory
+        if [[ "$(files::_perms "$destination_parent")" != '700' ]]; then
+            chmod 700 "$destination_parent" || {
+                declare retVal="$?"
+                echo "failed chmod'ing parent directory: ${destination_parent}" 1>&2
+                return "$retVal"
+            }
+            changed='true'
+        fi
+    fi
 
     if [[ -d "$source_file" ]]; then
         # create directory
