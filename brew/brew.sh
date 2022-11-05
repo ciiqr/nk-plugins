@@ -126,9 +126,9 @@ brew::provision() {
 
     declare changed
     if [[ "$output" == *'This operation has freed approximately'* ]]; then
-        changed='false'
-    else
         changed='true'
+    else
+        changed='false'
     fi
 
     declare description="brew cleanup"
