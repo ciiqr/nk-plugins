@@ -83,10 +83,10 @@ files::_provision_file() {
         declare source_contents
         source_contents="$(cat "$source_file")" || return "$?"
         declare destination_contents
-        destination_contents="$(cat "$destination_file" 2>/dev/null)" || return "$?"
+        destination_contents="$(cat "$destination_file" 2>/dev/null)" # failures intentionally ignored
 
         # create file
-        if [[ "$destination_contents" != "$source_contents" || -L "$destination_file" ]]; then
+        if [[ ! -f "$destination_file" || "$destination_contents" != "$source_contents" || -L "$destination_file" ]]; then
             # delete existing first
             if [[ -d "$destination_file" || -L "$destination_file" ]]; then
                 rm -rf "$destination_file" || return "$?"
