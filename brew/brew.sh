@@ -34,7 +34,7 @@ brew::_provision_package() {
         # cask
         declare cask_name="${package##*/}"
         package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<<"$brew_info")" || return "$?"
-        installed="$(jq '.installed' <<<"$package_info")" || return "$?"
+        installed="$(jq -r '.installed // empty' <<<"$package_info")" || return "$?"
     fi
 
     # ensure package exists
