@@ -160,8 +160,13 @@ defaults::_provision_default() {
         fi
 
         if [[ "$type" == 'dict' ]]; then
+            if ! "${sudo_if_needed[@]}" test -f "$domain_file"; then
+                # create plist if it doesn't yet exist
+                "${sudo_if_needed[@]}" /usr/libexec/PlistBuddy -c 'save' "$domain_file" || return "$?"
+                changed='true'
+            fi
+
             # TODO: evaluate what this would look like with `defaults write`, I suspect this is just strictly easier...
-            # TODO: handle $domain_file not existing yet
             "${sudo_if_needed[@]}" plutil -replace "$name" -json "$value" "$domain_file" || return "$?"
         else
             declare value_args=()

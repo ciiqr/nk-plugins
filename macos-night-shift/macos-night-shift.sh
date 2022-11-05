@@ -75,6 +75,13 @@ night_shift::_provision_default() {
 
     # write default
     if [[ "$previous_value" != "$comparable_value" ]]; then
+        if ! sudo test -f "$domain_file"; then
+            # create plist if it doesn't yet exist
+            sudo /usr/libexec/PlistBuddy -c 'save' "$domain_file" || return "$?"
+            changed='true'
+        fi
+
+        # write default
         sudo plutil -replace "$name" -json "$value" "$domain_file" || return "$?"
         changed='true'
     fi
