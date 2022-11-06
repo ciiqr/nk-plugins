@@ -253,7 +253,7 @@ defaults::provision() {
         # if program is running
         if pgrep "$program" >/dev/null 2>&1; then
             changed='true' # NOTE: defaults to true if program is running (unless it fails), could be wrong either way though
-            if ! nk::run_for_output output killall "$program"; then
+            if ! nk::run_for_output output sudo killall "$program"; then
                 status='failed'
                 changed='false'
             fi
