@@ -29,20 +29,14 @@ files::_provision_file() {
 
     if [[ ! -d "$destination_parent" ]]; then
         # create directory
-        mkdir -p "$destination_parent" || {
-            declare retVal="$?"
-            echo "failed creating parent directory: ${destination_parent}" 1>&2
-            return "$retVal"
-        }
+        mkdir -p "$destination_parent" \
+            || return "$(nk::error "$?" "failed creating parent directory: ${destination_parent}")"
         changed='true'
 
         # chmod directory
         if [[ "$(files::_perms "$destination_parent")" != '700' ]]; then
-            chmod 700 "$destination_parent" || {
-                declare retVal="$?"
-                echo "failed chmod'ing parent directory: ${destination_parent}" 1>&2
-                return "$retVal"
-            }
+            chmod 700 "$destination_parent" \
+                || return "$(nk::error "$?" "failed chmod'ing parent directory: ${destination_parent}")"
             changed='true'
         fi
     fi
