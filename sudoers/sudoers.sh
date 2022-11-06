@@ -14,7 +14,7 @@ sudoers::_provision_file() {
 
     # get existing contents
     declare existing_contents
-    existing_contents="$(sudo cat "$file" 2>/dev/null)" || return "$?"
+    existing_contents="$(sudo cat "$file" 2>/dev/null)" # failures intentionally ignored
 
     # create config
     if [[ "$existing_contents" != "$config" ]]; then
