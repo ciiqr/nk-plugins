@@ -70,6 +70,11 @@ terminal_theme::_provision_theme() {
 }
 
 terminal_theme::provision() {
+    if [[ "$CI" == 'true' ]]; then
+        # TODO: would be nice to make this work but it's a real pain working around the gui prompt we're getting: "bash" wants access to control "Terminal"
+        return 0
+    fi
+
     while read -r theme_path; do
         # provision
         declare status='success'
