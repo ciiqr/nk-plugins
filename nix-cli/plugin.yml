@@ -1,0 +1,9 @@
+name: nix-cli
+when: os in ["macos", "linux"]
+
+provision:
+  when:
+    - declaration == "packages"
+    - state == "nix"
+
+executable: nix-cli.sh
