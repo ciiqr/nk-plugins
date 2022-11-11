@@ -10,7 +10,8 @@ sudoers::_provision_file() {
     declare config="$2"
 
     # check config
-    visudo --check --strict --file=- <<<"$config" || return "$?"
+    visudo --check --strict --file=- <<<"$config" \
+        || return "$(nk::error "$?" "config invalid: ${config}")"
 
     # get existing contents
     declare existing_contents
