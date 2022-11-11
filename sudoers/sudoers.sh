@@ -35,9 +35,8 @@ sudoers::_provision_mode() {
 }
 
 sudoers::_provision_defaults() {
-    # TODO: remove/fix "templating"
     # create defaults config
-    sudoers::_provision_file "/etc/sudoers.d/defaults" "$(sed -E 's@\{\{ user \}\}@'"$USER"'@' <<<"$defaults")" || return "$?"
+    sudoers::_provision_file "/etc/sudoers.d/defaults" "$defaults" || return "$?"
 }
 
 sudoers::_sudo_or_promote_to_root() {
