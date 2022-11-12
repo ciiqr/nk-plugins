@@ -56,15 +56,24 @@ EOF
 }
 
 terminal_theme::_provision_theme() {
+    # resolve theme path relative to the source directories
+    declare resolved_theme_path=""
+    for nk_source in "${nk_sources[@]}"; do
+        declare source_theme_path="${nk_source}/${theme_path}"
+        if [[ -f "$source_theme_path" ]]; then
+            resolved_theme_path="$source_theme_path"
+        fi
+    done
+
     declare theme_name
-    theme_name="$(/usr/libexec/PlistBuddy -c "Print :name" "$theme_path")" || return "$?"
+    theme_name="$(/usr/libexec/PlistBuddy -c "Print :name" "$resolved_theme_path")" || return "$?"
 
     declare current_theme
     current_theme="$(terminal_theme::get_default_theme)" || return "$?"
 
     if [[ "$current_theme" != "$theme_name" ]]; then
         # change theme
-        terminal_theme::set_default_theme "$theme_name" "$theme_path" || return "$?"
+        terminal_theme::set_default_theme "$theme_name" "$resolved_theme_path" || return "$?"
         changed='true'
     fi
 }
@@ -74,6 +83,12 @@ terminal_theme::provision() {
         # TODO: would be nice to make this work but it's a real pain working around the gui prompt we're getting: "bash" wants access to control "Terminal"
         return 0
     fi
+
+    declare info="$1"
+    declare -a nk_sources=()
+    while read -r nk_source; do
+        nk_sources+=("$nk_source")
+    done <<< "$(jq -r --compact-output '.sources[]' <<<"$info")"
 
     while read -r theme_path; do
         # provision

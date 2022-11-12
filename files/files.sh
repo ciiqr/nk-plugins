@@ -107,8 +107,28 @@ files::_provision_file() {
     fi
 }
 
+files::_exists_under_any() {
+    declare source_="$1"
+    declare -a nk_sources=("${@:2}")
+
+    for nk_source in "${nk_sources[@]}"; do
+        # exists, and if it's a directory, it's also listable
+        if [[ -e "${nk_source}/${source_}" && (! -d "$source_" || -x "$source_") ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 files::provision()
 {
+    declare info="$1"
+    declare -a nk_sources=()
+    while read -r nk_source; do
+        nk_sources+=("$nk_source")
+    done <<< "$(jq -r --compact-output '.sources[]' <<<"$info")"
+
     while read -r state; do
         declare source_
         source_="$(jq -r '.source' <<< "$state")"
@@ -123,7 +143,7 @@ files::provision()
         resolved_destination="${destination/#~/$HOME}"
 
         # if source does not existing or isn't listable
-        if [[ ! -e "$source_" || ( -d "$source_" && ! -x "$source_" ) ]]; then
+        if ! files::_exists_under_any "$source_" "${nk_sources[@]}"; then
             declare output=''
             if [[ ! -e "$source_" ]]; then
                 output="${source_} does not exist"
@@ -139,43 +159,52 @@ files::provision()
             continue
         fi
 
-        # iterate all files/directories in source
-        while read -r source_file; do
-            # figure out destination file path
-            declare nested_source_file="${source_file#"${source_}/"}"
-            if [[ "$nested_source_file" == "$source_file" ]]; then
-                # source file is the source
-                declare destination_file="$resolved_destination"
-                declare destination_file_tilde="$destination"
-            else
-                # source file is a child of the source
-                declare destination_file="${resolved_destination}/${nested_source_file}"
-                declare destination_file_tilde="${destination}/${nested_source_file}"
+        # search relative to all nk sources
+        for nk_source in "${nk_sources[@]}"; do
+            declare nk_source_relative_source="${nk_source}/${source_}"
+            if [[ ! -e "$nk_source_relative_source" ]]; then
+                # NOTE: we check above if any of the sources exist, so this is fine
+                continue
             fi
 
-            # provision file
-            declare status='success'
-            declare changed='false'
-            declare output=''
-            if ! nk::run_for_output output "files::_provision_file"; then
-                status='failed'
-            fi
+            # iterate all files/directories in source
+            while read -r source_file; do
+                # figure out destination file path
+                declare nested_source_file="${source_file#"${nk_source_relative_source}/"}"
+                if [[ "$nested_source_file" == "$source_file" ]]; then
+                    # source file is the source
+                    declare destination_file="$resolved_destination"
+                    declare destination_file_tilde="$destination"
+                else
+                    # source file is a child of the source
+                    declare destination_file="${resolved_destination}/${nested_source_file}"
+                    declare destination_file_tilde="${destination}/${nested_source_file}"
+                fi
 
-            # build description
-            if [[ "$link_files" == 'false' || -d "$source_file" ]]; then
-                declare action='create'
-            else
-                declare action='link'
-            fi
-            declare description="${action} ${destination_file_tilde}"
+                # provision file
+                declare status='success'
+                declare changed='false'
+                declare output=''
+                if ! nk::run_for_output output "files::_provision_file"; then
+                    status='failed'
+                fi
 
-            # log state details
-            nk::log_result \
-                "$status" \
-                "$changed" \
-                "$description" \
-                "$output"
-        done <<< "$(find "$source_")"
+                # build description
+                if [[ "$link_files" == 'false' || -d "$source_file" ]]; then
+                    declare action='create'
+                else
+                    declare action='link'
+                fi
+                declare description="${action} ${destination_file_tilde}"
+
+                # log state details
+                nk::log_result \
+                    "$status" \
+                    "$changed" \
+                    "$description" \
+                    "$output"
+            done <<< "$(find "$nk_source_relative_source")"
+        done
     done <<< "$(jq --compact-output '.[]')"
 }
 
