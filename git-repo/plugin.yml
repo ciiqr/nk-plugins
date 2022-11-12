@@ -1,0 +1,7 @@
+name: git-repo
+when: os in ["macos", "linux"]
+
+provision:
+  when: declaration == "git.repo"
+
+executable: git-repo.sh
