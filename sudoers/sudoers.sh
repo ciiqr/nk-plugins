@@ -28,11 +28,15 @@ sudoers::_provision_mode() {
     if [[ "$mode" == 'passwordless' ]]; then
         declare user_config="${USER} ALL=(ALL:ALL) NOPASSWD:ALL"
     else
-        return 1 # TODO: implement other modes
+        declare user_config="${USER} ALL=(ALL:ALL) ALL"
     fi
 
     # create user config
     sudoers::_provision_file "/etc/sudoers.d/user-${USER}" "$user_config" || return "$?"
+
+    # TODO: configure touch id
+    # /etc/pam.d/sudo
+    # auth sufficient pam_tid.so
 }
 
 sudoers::_provision_defaults() {
