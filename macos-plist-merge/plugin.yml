@@ -1,0 +1,7 @@
+name: macos-plist-merge
+when: os == "macos"
+
+provision:
+  when: declaration == "macos.plist.merge"
+
+executable: macos-plist-merge.sh
