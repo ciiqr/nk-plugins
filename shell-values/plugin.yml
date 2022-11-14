@@ -1,0 +1,7 @@
+name: shell-values
+when: os in ["macos", "linux"]
+
+provision:
+  when: declaration == "shell.values"
+
+executable: shell-values.sh
