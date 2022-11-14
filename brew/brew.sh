@@ -56,6 +56,20 @@ brew::_provision_package() {
     fi
 }
 
+brew::_provision_brew_cli() {
+    if ! which brew >/dev/null; then
+        # install
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+            || return "$(nk::error "$?" 'failed installing brew cli')"
+        changed='true'
+
+        # TODO: support instal macs?
+        # update path (for this script only)
+        eval "$(/opt/homebrew/bin/brew shellenv)" \
+            || return "$(nk::error "$?" 'failed update path with brew')"
+    fi
+}
+
 brew::provision() {
     # collect list of all packages
     declare -a packages=()
@@ -63,25 +77,18 @@ brew::provision() {
         packages+=("$package")
     done <<< "$(jq -r --compact-output '.[]')"
 
-    # list all taps
-    declare -a taps=()
-    while read -r tap; do
-        taps+=("$tap")
-    done <<< "$(brew tap -q)"
-
-    # TODO: xcode tools
-    # if ! xcode-select -p >/dev/null; then
-    #     xcode-select --install
-    # fi
-
-    # TODO: brew install
-    # if ! which brew >/dev/null; then
-    #     # install
-    #     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-    #     # update path
-    #     eval "$(/opt/homebrew/bin/brew shellenv)"
-    # fi
+    # install brew
+    declare status='success'
+    declare changed='false'
+    declare output=''
+    if ! nk::run_for_output output brew::_provision_brew_cli; then
+        status='failed'
+    fi
+    nk::log_result \
+        "$status" \
+        "$changed" \
+        'installed brew' \
+        "$output"
 
     # update brew (required to know about new versions of packages)
     declare output=''
@@ -98,6 +105,12 @@ brew::provision() {
             "$description" \
             "$output"
     fi
+
+    # list all taps
+    declare -a taps=()
+    while read -r tap; do
+        taps+=("$tap")
+    done <<< "$(brew tap -q)"
 
     # provision packages
     for package in "${packages[@]}"; do
