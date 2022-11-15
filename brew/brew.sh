@@ -63,9 +63,16 @@ brew::_provision_brew_cli() {
             || return "$(nk::error "$?" 'failed installing brew cli')"
         changed='true'
 
-        # TODO: support instal macs?
+        # determine brew prefix
+        declare brew_prefix
+        if [[ "$(uname -m)" == 'arm64' ]]; then
+            brew_prefix=/opt/homebrew
+        else
+            brew_prefix=/usr/local
+        fi
+
         # update path (for this script only)
-        eval "$(/opt/homebrew/bin/brew shellenv)" \
+        eval "$("${brew_prefix}/bin/brew" shellenv)" \
             || return "$(nk::error "$?" 'failed update path with brew')"
     fi
 }
