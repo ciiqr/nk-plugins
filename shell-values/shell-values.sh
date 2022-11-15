@@ -28,6 +28,16 @@ shell_values::_provision_values() {
     declare destination_contents
     destination_contents="$(cat "$resolved_destination" 2>/dev/null)" # failures intentionally ignored
 
+    # create parent directory
+    declare destination_parent
+    destination_parent="$(dirname "$resolved_destination")"
+    if [[ ! -d "$destination_parent" ]]; then
+        mkdir -p "$destination_parent" \
+            || return "$(nk::error "$?" "failed creating parent directory: ${destination_parent}")"
+        changed='true'
+    fi
+
+    # create file
     if [[ "$destination_contents" != "$contents" ]]; then
         cat <<<"$contents" >"$resolved_destination" \
             || return "$(nk::error "$?" "failed writting file: ${resolved_destination}")"
