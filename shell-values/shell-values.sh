@@ -76,7 +76,7 @@ shell_values::provision()
             "$changed" \
             "$description" \
             "$output"
-    done <<< "$(jq --compact-output '.[]')"
+    done <<< "$(jq --compact-output '.[].state')"
 }
 
 case "$1" in

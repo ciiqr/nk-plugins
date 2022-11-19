@@ -119,7 +119,7 @@ sudoers::provision() {
                 "$description" \
                 "$output"
         fi
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 }
 
 case "$1" in

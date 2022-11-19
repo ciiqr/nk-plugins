@@ -112,7 +112,7 @@ pmset::provision() {
                     "$output"
             done <<< "$(jq -r --arg 'source' "$source_" '.[$source] | keys[]' <<< "$state")"
         done <<< "$(jq -r 'keys[]' <<< "$state")"
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 }
 
 case "$1" in

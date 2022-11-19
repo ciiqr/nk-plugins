@@ -1,7 +1,13 @@
 name: git-repo
 when: os in ["macos", "linux"]
+after: packages
 
 provision:
   when: declaration == "git.repo"
 
 executable: git-repo.sh
+
+# TODO: once implemented
+# dependencies:
+#   programs:
+#     - git

@@ -55,7 +55,7 @@ show::provision() {
             "$changed" \
             "$description" \
             "$output"
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 }
 
 case "$1" in

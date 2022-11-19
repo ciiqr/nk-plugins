@@ -82,7 +82,7 @@ brew::provision() {
     declare -a packages=()
     while read -r package; do
         packages+=("$package")
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 
     # install brew
     declare status='success'

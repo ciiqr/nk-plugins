@@ -243,7 +243,7 @@ defaults::provision() {
             "$changed" \
             "$description" \
             "$output"
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 
     # reset required programs
     for program in "${programs_to_reset[@]}"; do

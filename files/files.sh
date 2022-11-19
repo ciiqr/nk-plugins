@@ -205,7 +205,7 @@ files::provision()
                     "$output"
             done <<< "$(find "$nk_source_relative_source")"
         done
-    done <<< "$(jq --compact-output '.[]')"
+    done <<< "$(jq --compact-output '.[].state')"
 }
 
 case "$1" in

@@ -1,7 +1,13 @@
 name: macos-default-programs
 when: os == "macos"
+after: packages
 
 provision:
   when: declaration == "default.programs"
 
 executable: macos-default-programs.sh
+
+# TODO: once implemented
+# dependencies:
+#   programs:
+#     - duti

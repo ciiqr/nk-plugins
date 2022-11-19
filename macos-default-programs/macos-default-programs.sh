@@ -109,7 +109,7 @@ default_programs::provision() {
                 "$description" \
                 "$output"
         done <<< "$(jq -r 'keys[]' <<< "$state")"
-    done <<< "$(jq -r --compact-output '.[]')"
+    done <<< "$(jq -r --compact-output '.[].state')"
 }
 
 case "$1" in
