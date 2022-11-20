@@ -7,7 +7,7 @@ provision:
 
 executable: git-repo.sh
 
-# TODO: once implemented
+# TODO: shouldn't be required on mac, and I don't have any package plugins for linux yet...
 # dependencies:
-#   programs:
+#   packages:
 #     - git

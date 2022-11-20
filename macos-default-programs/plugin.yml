@@ -7,7 +7,6 @@ provision:
 
 executable: macos-default-programs.sh
 
-# TODO: once implemented
-# dependencies:
-#   programs:
-#     - duti
+dependencies:
+  packages:
+    - duti
