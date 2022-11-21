@@ -5,3 +5,19 @@ provision:
   when: declaration == "macos.defaults"
 
 executable: macos-defaults.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    domain:
+      type: string
+    name:
+      type: string
+    value: {} # any type
+    resets:
+      type: string
+  required:
+    - domain
+    - name
+    - value

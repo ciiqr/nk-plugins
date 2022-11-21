@@ -11,3 +11,17 @@ executable: git-repo.sh
 # dependencies:
 #   packages:
 #     - git
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    source:
+      type: string
+    destination:
+      type: string
+    update:
+      type: boolean
+  required:
+    - source
+    - destination

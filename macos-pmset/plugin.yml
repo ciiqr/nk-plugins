@@ -5,3 +5,32 @@ provision:
   when: declaration == "macos.pmset"
 
 executable: macos-pmset.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    all:
+      type: object
+      patternProperties:
+        ^.*$:
+          type:
+            - integer
+            - string
+      additionalProperties: false
+    battery:
+      type: object
+      patternProperties:
+        ^.*$:
+          type:
+            - integer
+            - string
+      additionalProperties: false
+    ac:
+      type: object
+      patternProperties:
+        ^.*$:
+          type:
+            - integer
+            - string
+      additionalProperties: false

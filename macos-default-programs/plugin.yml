@@ -10,3 +10,15 @@ executable: macos-default-programs.sh
 dependencies:
   packages:
     - duti
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  patternProperties:
+    ^\..*$:
+      title: file extension default
+      type: string
+    ^.*://$:
+      title: uri scheme default
+      type: string
+  additionalProperties: false

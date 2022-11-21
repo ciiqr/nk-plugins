@@ -5,3 +5,44 @@ provision:
   when: declaration == "macos.night-shift"
 
 executable: macos-night-shift.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    schedule:
+      type: object
+      properties:
+        day:
+          type: object
+          properties:
+            hour:
+              type:
+                - integer
+                - string
+            minute:
+              type:
+                - integer
+                - string
+          required:
+            - hour
+            - minute
+        night:
+          type: object
+          properties:
+            hour:
+              type:
+                - integer
+                - string
+            minute:
+              type:
+                - integer
+                - string
+          required:
+            - hour
+            - minute
+      required:
+        - day
+        - night
+  required:
+    - schedule

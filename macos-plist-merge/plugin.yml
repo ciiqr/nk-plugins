@@ -5,3 +5,14 @@ provision:
   when: declaration == "macos.plist.merge"
 
 executable: macos-plist-merge.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    plist:
+      type: string
+    value: {} # any type
+  required:
+    - plist
+    - value

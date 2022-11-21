@@ -78,9 +78,9 @@ sudoers::provision() {
     while read -r state; do
         # TODO: consider a better interface...
         declare mode
-        mode="$(jq -r '.mode' <<< "$state")"
+        mode="$(jq -r '.mode // empty' <<< "$state")"
         declare defaults
-        defaults="$(jq -r '.defaults' <<< "$state")"
+        defaults="$(jq -r '.defaults // empty' <<< "$state")"
 
         # configure mode
         if [[ -n "$mode" ]]; then

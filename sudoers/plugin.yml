@@ -5,3 +5,15 @@ provision:
   when: declaration == "sudoers"
 
 executable: sudoers.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    mode:
+      type: string
+      enum:
+        - password
+        - passwordless
+    defaults:
+      type: string

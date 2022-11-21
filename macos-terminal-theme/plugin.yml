@@ -5,3 +5,7 @@ provision:
   when: declaration == "macos.terminal.theme"
 
 executable: macos-terminal-theme.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: string

@@ -5,3 +5,21 @@ provision:
   when: declaration == "shell.values"
 
 executable: shell-values.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    values:
+      type: object
+      patternProperties:
+        ^.*$:
+          type: string
+      additionalProperties: false
+    destination:
+      type: string
+    export:
+      type: boolean
+  required:
+    - values
+    - destination

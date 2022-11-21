@@ -5,3 +5,7 @@ provision:
   when: declaration == "macos.hide"
 
 executable: macos-hide.sh
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: string

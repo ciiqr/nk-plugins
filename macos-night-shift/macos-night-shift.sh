@@ -37,10 +37,10 @@ night_shift::_provision_default() {
                 "AutoBlueReductionEnabled": 1,
                 "BlueLightReductionDisableScheduleAlertCounter": 3,
                 "BlueLightReductionSchedule": {
-                    "DayStartHour": 9,
-                    "DayStartMinute": 0,
-                    "NightStartHour": 0,
-                    "NightStartMinute": 0
+                    "DayStartHour": $schedule_day_hour,
+                    "DayStartMinute": $schedule_day_minute,
+                    "NightStartHour": $schedule_night_hour,
+                    "NightStartMinute": $schedule_night_minute
                 },
                 "BlueReductionAvailable": true,
                 "BlueReductionEnabled": 0,
