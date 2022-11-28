@@ -1,0 +1,38 @@
+name: release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Determine New Version
+        id: version
+        uses: zwaldowski/semver-release-action@v2
+        with:
+          dry_run: true
+          bump: minor
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set Env
+        env:
+          VERSION: v${{ steps.version.outputs.version }}
+        run: echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      - name: Build assets
+        run: ./scripts/build-assets.sh
+      - name: Create Release
+        env:
+          GITHUB_USER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          declare -a files=(*.tar.gz)
+          declare -a args=()
+          for file in "${files[@]}"; do
+              args+=("-a" "$file")
+          done
+
+          hub release create \
+            "${args[@]}" \
+            -m "$VERSION" "$VERSION"

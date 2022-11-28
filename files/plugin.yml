@@ -1,5 +1,5 @@
 name: files
-when: os in ["macos", "linux"]
+when: family == "unix"
 
 provision:
   when: declaration == "files"

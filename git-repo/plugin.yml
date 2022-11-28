@@ -1,5 +1,5 @@
 name: git-repo
-when: os in ["macos", "linux"]
+when: family == "unix"
 after: packages
 
 provision:

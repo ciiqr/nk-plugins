@@ -1,5 +1,5 @@
 name: shell-values
-when: os in ["macos", "linux"]
+when: family == "unix"
 
 provision:
   when: declaration == "shell.values"
