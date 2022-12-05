@@ -48,7 +48,7 @@ brew::_provision_package() {
         brew install --no-quarantine "$package" || return "$?"
         changed='true'
         action='install'
-    elif ! brew outdated --greedy "$package" >/dev/null; then
+    elif ! brew outdated "$package" >/dev/null; then
         # update
         brew upgrade --no-quarantine "$package" || return "$?"
         changed='true'
