@@ -113,7 +113,8 @@ files::_exists_under_any() {
 
     for nk_source in "${nk_sources[@]}"; do
         # exists, and if it's a directory, it's also listable
-        if [[ -e "${nk_source}/${source_}" && (! -d "$source_" || -x "$source_") ]]; then
+        declare possible_source="${nk_source}/${source_}"
+        if [[ -e "$possible_source" && (! -d "$possible_source" || -x "$possible_source") ]]; then
             return 0
         fi
     done

@@ -19,6 +19,8 @@ while read -r plugin_yml; do
         asset_file="${name}-unix.tar.gz"
     elif [[ "$when" == 'os == "macos"' ]]; then
         asset_file="${name}-macos.tar.gz"
+    elif [[ "$when" == 'os == "windows"' ]]; then
+        asset_file="${name}-windows.tar.gz"
     else
         echo "could not determine asset name for ${name}: ${when}"
         exit 1

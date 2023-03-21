@@ -1,0 +1,11 @@
+name: winget
+when: os == "windows"
+
+provision:
+  when: declaration in ["packages", "packages.winget"]
+
+executable: winget.ps1
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: string
