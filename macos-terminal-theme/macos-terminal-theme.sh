@@ -6,53 +6,66 @@ set -e
 eval "$(nk plugin bash 2>/dev/null)"
 
 terminal_theme::get_default_theme() {
-    # TODO: instead of first window, try using current window (I believe the background window might be causing issues with this rn)
-    osascript <<<'tell application "Terminal" to return name of current settings of first window' || return "$?"
+    osascript <<<'tell application "Terminal" to return name of default settings' || return "$?"
 }
 
 terminal_theme::set_default_theme() {
-    osascript - "$@" <<'EOF' || return "$?"
+    osascript - "$@" <<<'
         on run argv
             tell application "Terminal"
-                local allOpenWindows
-                local initiallyOpenWindows
-                local windowId
-                local name
                 set themeName to item 1 of argv
                 set themeFile to item 2 of argv
 
-                (* Store the IDs of all the open terminal windows. *)
+                -- store ids of open windows
                 set initiallyOpenWindows to id of every window
 
-                (* Open the custom theme so that it gets added to the list of available terminal themes. This will temporarily open additional windows. *)
+                -- open theme in new window (so it gets added to the available themes)
                 do shell script "open -a Terminal " & quoted form of themeFile
 
-                (* Wait a little bit to ensure that the custom theme is added. *)
-                delay 10
+                -- wait for the new window to open and finish loading, then close it
+                repeat
+                    set closed to false
+                    set allOpenWindows to id of every window
 
-                (* Set the custom theme as the default terminal theme. *)
+                    repeat with windowId in allOpenWindows
+                        try
+                            if initiallyOpenWindows does not contain windowId then
+                                set newWindow to (first window whose id is windowId)
+                                set newTab to (first tab of newWindow)
+
+                                if not busy of newTab then
+                                    set closed to true
+                                    close newWindow
+                                end if
+                            end if
+                        on error errMsg
+                            log "ERROR: " & errMsg
+                        end try
+                    end repeat
+
+                    if closed then
+                        exit repeat
+                    end if
+
+                    delay 0.02
+                end repeat
+
+                -- set the custom theme as the default theme
                 set default settings to settings set themeName
 
-                (* Get the IDs of all the currently opened terminal windows. *)
-                set allOpenWindows to id of every window
-
-                repeat with windowId in allOpenWindows
-                    if initiallyOpenWindows does not contain windowId then
-                        (* Close the additional windows that were opened in order to add the custom theme to the list of terminal themes. *)
-                        close (every window whose id is windowId)
-                    else
-                        set name to name of (every window whose id is windowId)
-                        -- NOTE: there seems to be an extra window open (in the background or something)
-                        -- Trying to change its settings throws an error so we skip it (luckily it doesn't have a name, so we skip based on that)
-                        if (name as string) is not equal to "" then
-                            (* Change the theme for the initial opened terminal windows to remove the need to close them in order for the custom theme to be applied. *)
-                            set current settings of tabs of (every window whose id is windowId) to settings set themeName
-                        end if
-                    end if
+                -- apply theme to open tabs immediately
+                repeat with windowId in initiallyOpenWindows
+                    try
+                        set current settings of tabs of (every window whose id is windowId) to settings set themeName
+                    on error errMsg
+                        -- NOTE: only for debugging because Terminal always has a
+                        -- dummy/background window that breaks everything
+                        -- log "ERROR: " & errMsg
+                    end try
                 end repeat
             end tell
         end run
-EOF
+    ' || return "$?"
 }
 
 terminal_theme::_provision_theme() {
