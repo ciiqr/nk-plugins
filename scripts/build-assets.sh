@@ -4,11 +4,11 @@ set -e
 
 while read -r plugin_yml; do
     declare name
-    name="$(yq '.name' "$plugin_yml")"
+    name="$(yq -r '.name' "$plugin_yml")"
     declare executable
-    executable="$(yq '.executable' "$plugin_yml")"
+    executable="$(yq -r '.executable' "$plugin_yml")"
     declare when
-    when="$(yq '.when' "$plugin_yml")"
+    when="$(yq -r '.when' "$plugin_yml")"
     declare plugin_dir
     plugin_dir="$(dirname "$plugin_yml")"
 
