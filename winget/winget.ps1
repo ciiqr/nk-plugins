@@ -28,10 +28,9 @@ function winget_provision_package() {
     if (!$?) {
         # install
         $result.changed = $true
-        $output = (winget install --exact --silent $package) -join "`n"
+        $result.output = (winget install --exact --silent $package) -join "`n"
         if (!$?) {
             $result.status = "failed"
-            $result.output = $output
             return $result
         }
     }
@@ -43,10 +42,9 @@ function winget_provision_package() {
             # update
             $result.changed = $true
             $result.description = "update package ${package}"
-            $output = (winget upgrade --exact --silent $package) -join "`n"
+            $result.output = (winget upgrade --exact --silent $package) -join "`n"
             if (!$?) {
                 $result.status = "failed"
-                $result.output = $output
                 return $result
             }
         }
