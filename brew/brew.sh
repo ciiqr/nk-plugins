@@ -114,7 +114,11 @@ brew::provision() {
     fi
 
     # list all taps
-    declare -a taps=()
+    declare -a taps=(
+        # NOTE: should no longer be tapped
+        'homebrew/core'
+        'homebrew/cask'
+    )
     while read -r tap; do
         taps+=("$tap")
     done <<< "$(brew tap -q)"
