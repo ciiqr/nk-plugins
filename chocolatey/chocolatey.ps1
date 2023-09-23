@@ -79,7 +79,7 @@ switch ($command) {
         chocolatey_provision
     }
     default {
-        echo "chocolatey: unrecognized subcommand: ${command}"
+        Write-Output "chocolatey: unrecognized subcommand: ${command}"
         exit 1
     }
 }

@@ -80,7 +80,7 @@ switch ($command) {
         winget_provision
     }
     default {
-        echo "winget: unrecognized subcommand: ${command}"
+        Write-Output "winget: unrecognized subcommand: ${command}"
         exit 1
     }
 }
