@@ -18,8 +18,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set Env
         env:
-          VERSION: v${{ steps.version.outputs.version }}
-        run: echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          TAG: v${{ steps.version.outputs.version }}
+        run: echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Build assets
         run: ./scripts/build-assets.sh
       - name: Create Release
@@ -27,12 +27,8 @@ jobs:
           GITHUB_USER: ${{ github.repository_owner }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          declare -a files=(*.tar.gz)
-          declare -a args=()
-          for file in "${files[@]}"; do
-              args+=("-a" "$file")
-          done
-
-          hub release create \
-            "${args[@]}" \
-            -m "$VERSION" "$VERSION"
+          gh release create \
+            --title "$TAG" \
+            --notes '' \
+            "$TAG" \
+            *.tar.gz
