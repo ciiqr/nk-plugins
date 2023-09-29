@@ -2,6 +2,12 @@
 
 set -e
 
+# create manifest.yml
+echo "owner: ciiqr
+repo: nk-plugins
+version: ${TAG}
+plugins:" > manifest.yml
+
 while read -r plugin_yml; do
     declare name
     name="$(yq -r '.name' "$plugin_yml")"
@@ -25,6 +31,12 @@ while read -r plugin_yml; do
         echo "could not determine asset name for ${name}: ${when}"
         exit 1
     fi
+
+    # append plugin to manifest
+    echo "  - name: ${name}
+    assets:
+      - file: ${asset_file}
+        when: ${when}" >> manifest.yml
 
     # absolute asset path
     declare asset_path

@@ -31,4 +31,4 @@ jobs:
             --title "$TAG" \
             --notes '' \
             "$TAG" \
-            *.tar.gz
+            manifest.yml *.tar.gz
