@@ -20,8 +20,22 @@ jobs:
         env:
           TAG: v${{ steps.version.outputs.version }}
         run: echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Install nk
+        run: |
+          # install nk
+          curl -fsSL 'https://raw.githubusercontent.com/ciiqr/nk/HEAD/install.sh' | bash
+
+          # add to path
+          echo "${HOME}/.nk/bin" >> $GITHUB_PATH
       - name: Build assets
-        run: ./scripts/build-assets.sh
+        env:
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+        run: |
+          nk plugin pack \
+            --owner "$GITHUB_REPOSITORY_OWNER" \
+            --repo "$REPOSITORY_NAME" \
+            --version "$TAG" \
+            ./*/plugin.yml
       - name: Create Release
         env:
           GITHUB_USER: ${{ github.repository_owner }}
