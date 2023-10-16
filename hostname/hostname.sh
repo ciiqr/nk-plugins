@@ -6,6 +6,11 @@ set -e
 eval "$(nk plugin helper bash 2>/dev/null)"
 
 hostname::_provision_macos() {
+    if [[ "$CI" == 'true' ]]; then
+        # NOTE: doesn't work in github actions
+        return 0
+    fi
+
     declare current_host_name
     current_host_name="$(scutil --get 'HostName')"
     if [[ "$current_host_name" != "$hostname" ]]; then
