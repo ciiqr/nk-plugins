@@ -62,9 +62,9 @@ hostname::_provision() {
     if [[ "$OSTYPE" == darwin* ]]; then
         hostname::_provision_macos
     elif which hostnamectl >/dev/null; then
-        hostname::hostname::_provision_linux
+        hostname::_provision_linux
     else
-        hostname::hostname::_provision_unix
+        hostname::_provision_unix
     fi
 }
 
