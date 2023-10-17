@@ -53,9 +53,9 @@ plist_merge::_provision_value() {
                 number)
                     # NOTE: if new or existing value have a dot, assume it's a float (the best we can reasonably do)
                     if [[ "$value" == *'.'* || "$existing" == *'.'* ]]; then
-                        type='float'
+                        type='real'
                     else
-                        type='int'
+                        type='integer'
                     fi
                 ;;
                 null)
