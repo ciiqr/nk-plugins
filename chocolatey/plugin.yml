@@ -2,7 +2,8 @@ name: chocolatey
 when: os == "windows"
 
 provision:
-  when: declaration in ["packages", "packages.chocolatey"]
+
+  when: declaration in ["packages", "chocolatey.packages"]
 
 executable: chocolatey.ps1
 

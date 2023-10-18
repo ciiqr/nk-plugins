@@ -2,7 +2,7 @@ name: brew
 when: os == "macos"
 
 provision:
-  when: declaration == "packages"
+  when: declaration in ["packages", "brew.packages"]
 
 executable: brew.sh
 

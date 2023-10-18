@@ -2,7 +2,7 @@ name: winget
 when: os == "windows"
 
 provision:
-  when: declaration in ["packages", "packages.winget"]
+  when: declaration in ["packages", "winget.packages"]
 
 executable: winget.ps1
 
