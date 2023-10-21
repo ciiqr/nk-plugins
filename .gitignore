@@ -1,5 +1,4 @@
-# nix
-/.direnv/
-
-# release assets
+/target/
 *.tar.gz
+manifest.yml
+/*/assets/

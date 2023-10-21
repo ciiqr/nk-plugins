@@ -4,14 +4,75 @@ on:
     branches:
       - main
 jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        build:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.build.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup musl
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+          sudo apt-get install -y musl-tools
+          echo 'LDFLAGS=-Wl,--copy-dt-needed-entries' >> $GITHUB_ENV
+          echo 'RUSTFLAGS=-C target-feature=+crt-static' >> $GITHUB_ENV
+        if: matrix.build.target == 'x86_64-unknown-linux-musl'
+      - name: Setup Apple Silicon
+        run: rustup target add aarch64-apple-darwin
+        if: matrix.build.target == 'aarch64-apple-darwin'
+      - uses: Swatinem/rust-cache@v2
+      - name: Build # not windows
+        env:
+          TARGET: ${{ matrix.build.target }}
+        run: |
+          declare output
+          output="$(
+            cargo build \
+              --workspace \
+              --release \
+              --target "$TARGET" \
+              --message-format=json \
+              | jq -r '.message.rendered // .executable // empty'
+          )"
+          echo "ARTIFACT_PATH=$output" >> $GITHUB_ENV
+        if: runner.os != 'Windows'
+      - name: Build # windows
+        env:
+          TARGET: ${{ matrix.build.target }}
+        run: |
+          $output = cargo build `
+              --workspace `
+              --release `
+              --target "$env:TARGET" `
+              --message-format=json `
+              | jq -r '.message.rendered // .executable // empty'
+
+          "ARTIFACT_PATH=$output" | Out-File -FilePath $env:GITHUB_ENV -Append
+        if: runner.os == 'Windows'
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.build.target }}
+          path: ${{ env.ARTIFACT_PATH }}
   release:
     name: Release
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Determine New Version
         id: version
-        uses: zwaldowski/semver-release-action@v2
+        uses: zwaldowski/semver-release-action@v3
         with:
           dry_run: true
           bump: minor
@@ -27,6 +88,21 @@ jobs:
 
           # add to path
           echo "${HOME}/.nk/bin" >> $GITHUB_PATH
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Move executables
+        run: |
+          for file in artifacts/*/*; do
+            exe="$(basename "$file")"
+            plugin="${exe%\.exe}"
+            target="$(basename "$(dirname "$file")")"
+            parent="${plugin}/assets/${target}"
+
+            mkdir -p "$parent"
+            mv "$file" "${parent}/${exe}"
+          done
       - name: Build assets
         env:
           REPOSITORY_NAME: ${{ github.event.repository.name }}
