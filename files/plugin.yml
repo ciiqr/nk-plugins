@@ -1,10 +1,7 @@
 name: files
-when: family == "unix"
 
 provision:
   when: declaration == "files"
-
-executable: files.sh
 
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
@@ -19,3 +16,27 @@ schema:
   required:
     - source
     - destination
+
+---
+when:
+ - os == "macos"
+ - arch == "x86_64"
+executable: assets/x86_64-apple-darwin/files
+
+---
+when:
+  - os == "macos"
+  - arch == "aarch64"
+executable: assets/aarch64-apple-darwin/files
+
+---
+when:
+  - os == "linux"
+  - arch == "x86_64"
+executable: assets/x86_64-unknown-linux-musl/files
+
+---
+when:
+  - family == "windows"
+  - arch == "x86_64"
+executable: assets/x86_64-pc-windows-msvc/files.exe
