@@ -1,11 +1,17 @@
 name: hostname
-when: family == "unix"
 
 provision:
   when: declaration == "hostname"
 
-executable: hostname.sh
 
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: string
+
+---
+when: family == "unix"
+executable: hostname.sh
+
+---
+when: os == "windows"
+executable: hostname.ps1
