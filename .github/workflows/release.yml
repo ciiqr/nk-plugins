@@ -102,6 +102,7 @@ jobs:
 
             mkdir -p "$parent"
             mv "$file" "${parent}/${exe}"
+            chmod +x "${parent}/${exe}"
           done
       - name: Build assets
         env:
