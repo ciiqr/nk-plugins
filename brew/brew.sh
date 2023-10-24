@@ -7,8 +7,9 @@ eval "$(nk plugin helper bash 2>/dev/null)"
 
 brew::_provision_package() {
     # formula
-    declare installed
     declare outdated
+    declare installed_version
+    declare latest_version
     declare package_info
     package_info="$(
         jq \
@@ -18,15 +19,20 @@ brew::_provision_package() {
     )" || return "$?"
 
     if [[ -n "$package_info" ]]; then
-        installed="$(jq '.installed[]' <<<"$package_info")" || return "$?"
+        installed_version="$(jq -r '.installed[0].version // empty' <<<"$package_info")" || return "$?"
+        latest_version="$(jq -r '.versions.stable // empty' <<<"$package_info")" || return "$?"
         outdated="$(jq '.outdated' <<<"$package_info")" || return "$?"
     else
         # cask
         declare cask_name="${package##*/}"
         package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<<"$brew_info")" || return "$?"
-        installed="$(jq -r '.installed // empty' <<<"$package_info")" || return "$?"
+        installed_version="$(jq -r '.installed // empty' <<<"$package_info")" || return "$?"
+        latest_version="$(jq -r '.version // empty' <<<"$package_info")" || return "$?"
         outdated="$(jq -r '.outdated // empty' <<<"$package_info")" || return "$?"
     fi
+
+    # remove _\d$ from $installed_version (it's not there in the latest version, but the versions will otherwise match)
+    installed_version="${installed_version%_[0-9]}"
 
     # ensure package exists
     if [[ -z "$package_info" ]]; then
@@ -34,12 +40,16 @@ brew::_provision_package() {
         return 1
     fi
 
-    if [[ -z "$installed" ]]; then
+    if [[ -z "$installed_version" ]]; then
         # install
         brew install --no-quarantine "$package" || return "$?"
         changed='true'
         action='install'
-    elif [[ "$outdated" == 'true' ]]; then
+    elif [[ "$outdated" == 'true' ]] ||
+        [[ -n "$installed_version" && -n "$latest_version"
+            && "$installed_version" != "$latest_version" ]]; then
+        # NOTE: version check because auto_update packages aren't shown as outdated (even that )
+
         # update
         brew upgrade --no-quarantine "$package" || return "$?"
         changed='true'
