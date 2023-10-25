@@ -52,21 +52,42 @@ function chocolatey_provision_package() {
     return $result
 }
 
+function choco_install() {
+    Invoke-Expression (
+        (New-Object System.Net.WebClient).DownloadString(
+            'https://community.chocolatey.org/install.ps1'
+        )
+    )
+}
+
+function chocolatey_provision_choco_cli() {
+    $result = @{
+        status = "success"
+        changed = $false
+        description = "installed choco"
+        output = ""
+    }
+
+    # ensure choco cli exists
+    if (!(Get-Command "choco" -ErrorAction "SilentlyContinue")) {
+        $result.output = (choco_install *>&1) -join "`n"
+        if (!$?) {
+            $result.status = "failed"
+            return $result
+        }
+        $result.changed = $true
+    }
+
+    # TODO: choco upgrade chocolatey
+
+    return $result
+}
+
 function chocolatey_provision() {
     $states = ConvertFrom-Json $stdin
 
-    # ensure chocolatey cli exists
-    if (!(Get-Command "choco" -ErrorAction "SilentlyContinue")) {
-        # TODO: install chocolatey?
-        @{
-            status = "failed"
-            changed = $false
-            description = "chocolatey"
-            output = "command not found: choco"
-        } | ConvertTo-Json -Compress
-
-        return
-    }
+    # install choco
+    chocolatey_provision_choco_cli | ConvertTo-Json -Compress
 
     # provision packages
     foreach ($state in $states) {

@@ -153,6 +153,8 @@ function winget_provision_winget_cli() {
         $result.changed = $true
     }
 
+    # TODO: update winget itself
+
     return $result
 }
 
