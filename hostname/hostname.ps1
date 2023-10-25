@@ -24,12 +24,12 @@ function hostname_provision_computer_name() {
     }
 
     if ($env:ComputerName -ne $hostname) {
-        $result.changed = $true
         $result.output = (Rename-Computer -NewName $hostname -Force) -join "`n"
         if (!$?) {
             $result.status = "failed"
             return $result
         }
+        $result.changed = $true
     }
 
     return $result
