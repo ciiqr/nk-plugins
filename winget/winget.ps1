@@ -33,7 +33,7 @@ function winget_provision_package() {
     winget list --exact $package | Out-Null
     if (!$?) {
         # install
-        $result.output = (winget install --exact --silent $package) -join "`n"
+        $result.output = (winget install --exact --silent $package *>&1) -join "`n"
         if (!$?) {
             $result.status = "failed"
             return $result
@@ -42,12 +42,12 @@ function winget_provision_package() {
     }
     else {
         # check if update required
-        $output = (winget upgrade) -join "`n"
+        $output = (winget upgrade *>&1) -join "`n"
         # TODO: unsure if we'll consistently have spaces on both sides, but we want a complete match so... hopefully
         if ($output -like "* ${package} *") {
             # update
             $result.description = "update package ${package}"
-            $result.output = (winget upgrade --exact --silent $package) -join "`n"
+            $result.output = (winget upgrade --exact --silent $package *>&1) -join "`n"
             if (!$?) {
                 $result.status = "failed"
                 return $result
@@ -145,7 +145,7 @@ function winget_provision_winget_cli() {
 
     # ensure winget cli exists
     if (!(Get-Command "winget" -ErrorAction "SilentlyContinue")) {
-        $result.output = (winget_install) -join "`n"
+        $result.output = (winget_install *>&1) -join "`n"
         if (!$?) {
             $result.status = "failed"
             return $result

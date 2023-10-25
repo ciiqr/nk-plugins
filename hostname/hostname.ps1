@@ -24,7 +24,7 @@ function hostname_provision_computer_name() {
     }
 
     if ($env:ComputerName -ne $hostname) {
-        $result.output = (Rename-Computer -NewName $hostname -Force) -join "`n"
+        $result.output = (Rename-Computer -NewName $hostname -Force *>&1) -join "`n"
         if (!$?) {
             $result.status = "failed"
             return $result

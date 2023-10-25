@@ -24,10 +24,10 @@ function chocolatey_provision_package() {
     }
 
     # check if package installed
-    $output = (choco search --limit-output --exact --local $package) -join "`n"
+    $output = (choco search --limit-output --exact --local $package *>&1) -join "`n"
     if (!($output -match "(?mi)^${package}\|.*")) {
         # install
-        $result.output = (choco install --exact -y $package) -join "`n"
+        $result.output = (choco install --exact -y $package *>&1) -join "`n"
         if (!$?) {
             $result.status = "failed"
             return $result
@@ -36,11 +36,11 @@ function chocolatey_provision_package() {
     }
     else {
         # check if update required
-        $output = (choco outdated --limit-output) -join "`n"
+        $output = (choco outdated --limit-output *>&1) -join "`n"
         if ($output -match "(?mi)^${package}\|.*") {
             # update
             $result.description = "update package ${package}"
-            $result.output = (choco upgrade --limit-output -y $package) -join "`n"
+            $result.output = (choco upgrade --limit-output -y $package *>&1) -join "`n"
             if (!$?) {
                 $result.status = "failed"
                 return $result
