@@ -216,8 +216,8 @@ fn provision_sub_file(
             use std::os::unix::prelude::MetadataExt;
             use std::os::unix::prelude::PermissionsExt;
 
-            // TODO: fix unwrap
-            let metadata = destination_parent.metadata().unwrap();
+            let metadata =
+                destination_parent.metadata().expect("accessing metadata");
             let mut permissions = metadata.permissions();
             let existing_mode = permissions.mode() & 0o777;
 
@@ -236,6 +236,42 @@ fn provision_sub_file(
                     return result;
                 };
                 result.changed = true;
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::prelude::*;
+            use windows::Win32::Storage::FileSystem::{
+                SetFileAttributesW, FILE_ATTRIBUTE_HIDDEN,
+            };
+
+            // hide dotfiles on windows
+            let file_name = destination_parent.file_name().unwrap_or_default();
+            if file_name.starts_with('.') {
+                let metadata =
+                    destination_parent.metadata().expect("accessing metadata");
+                let attributes = metadata.file_attributes();
+
+                // if not hidden
+                if (attributes & FILE_ATTRIBUTE_HIDDEN.0) == 0 {
+                    // hide
+                    if let Err(e) = unsafe {
+                        SetFileAttributesW(
+                            &destination_parent.as_os_str().into(),
+                            FILE_ATTRIBUTE_HIDDEN,
+                        )
+                    } {
+                        // failed changing attributes of parent
+                        result.status = NkProvisionStateStatus::Failed;
+                        result.output = format!(
+                            "{e}: failed changing attributes of parent: {destination_parent}",
+                        );
+
+                        return result;
+                    };
+                    result.changed = true;
+                }
             }
         }
     }
@@ -279,8 +315,8 @@ fn provision_sub_file(
             use std::fs::set_permissions;
             use std::os::unix::prelude::PermissionsExt;
 
-            // TODO: fix unwrap
-            let metadata = destination_file.metadata().unwrap();
+            let metadata =
+                destination_file.metadata().expect("accessing metadata");
             let mut permissions = metadata.permissions();
             let existing_mode = permissions.mode() & 0o777;
 
@@ -412,8 +448,8 @@ fn provision_sub_file(
             use std::fs::set_permissions;
             use std::os::unix::prelude::PermissionsExt;
 
-            // TODO: fix unwrap
-            let metadata = destination_file.metadata().unwrap();
+            let metadata =
+                destination_file.metadata().expect("accessing metadata");
             let mut permissions = metadata.permissions();
             let existing_mode = permissions.mode() & 0o777;
 
@@ -432,6 +468,42 @@ fn provision_sub_file(
                     result.status = NkProvisionStateStatus::Failed;
                     result.output = format!(
                         "{e}: failed changing permissions of file: {destination_file}",
+                    );
+
+                    return result;
+                };
+                result.changed = true;
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::prelude::*;
+        use windows::Win32::Storage::FileSystem::{
+            SetFileAttributesW, FILE_ATTRIBUTE_HIDDEN,
+        };
+
+        // hide dotfiles on windows
+        let file_name = destination_file.file_name().unwrap_or_default();
+        if file_name.starts_with('.') {
+            let metadata =
+                destination_file.metadata().expect("accessing metadata");
+            let attributes = metadata.file_attributes();
+
+            // if not hidden
+            if (attributes & FILE_ATTRIBUTE_HIDDEN.0) == 0 {
+                // hide
+                if let Err(e) = unsafe {
+                    SetFileAttributesW(
+                        &destination_file.as_os_str().into(),
+                        FILE_ATTRIBUTE_HIDDEN,
+                    )
+                } {
+                    // changing permissions of directory
+                    result.status = NkProvisionStateStatus::Failed;
+                    result.output = format!(
+                        "{e}: changing permissions of directory: {destination_file}",
                     );
 
                     return result;
