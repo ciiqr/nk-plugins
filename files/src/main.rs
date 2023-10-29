@@ -95,7 +95,7 @@ fn provision(args: Provision) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct NkProvisionStateResult {
     status: NkProvisionStateStatus,
     changed: bool,
@@ -103,11 +103,47 @@ struct NkProvisionStateResult {
     output: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 enum NkProvisionStateStatus {
     Failed,
     Success,
+}
+
+impl NkProvisionStateResult {
+    // TODO: is there a better way of implementing this return value? I don't love the need to clone...
+    fn append_change<T>(
+        &mut self,
+        change: Result<T, String>,
+    ) -> Result<T, Self> {
+        match change {
+            Ok(v) => {
+                self.changed = true;
+
+                Ok(v)
+            }
+            Err(e) => {
+                self.status = NkProvisionStateStatus::Failed;
+                self.output.push_str(&e);
+                self.output.push('\n');
+
+                Err(self.clone())
+            }
+        }
+    }
+
+    fn append_check<T>(&mut self, check: Result<T, String>) -> Result<T, Self> {
+        match check {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                self.status = NkProvisionStateStatus::Failed;
+                self.output.push_str(&e);
+                self.output.push('\n');
+
+                Err(self.clone())
+            }
+        }
+    }
 }
 
 fn provision_file(nk_sources: &[Utf8PathBuf], state: &FileState) -> Result<()> {
@@ -159,11 +195,13 @@ fn provision_file(nk_sources: &[Utf8PathBuf], state: &FileState) -> Result<()> {
                     .join(source_file.strip_prefix(nk_source_relative_source)?)
             };
 
-            let output = provision_sub_file(
+            let output = match provision_sub_file(
                 &source_file,
                 &destination_file,
                 *link_files,
-            );
+            ) {
+                Ok(r) | Err(r) => r,
+            };
 
             println!("{}", serde_json::to_string(&output)?);
         }
@@ -176,7 +214,7 @@ fn provision_sub_file(
     source_file: &Utf8Path,
     destination_file: &Utf8Path,
     link_files: bool,
-) -> NkProvisionStateResult {
+) -> Result<NkProvisionStateResult, NkProvisionStateResult> {
     let action = if !link_files || source_file.is_dir() {
         "create"
     } else {
@@ -197,16 +235,11 @@ fn provision_sub_file(
     if let Some(destination_parent) = destination_file.parent() {
         if !destination_parent.exists() {
             // create directory
-            if let Err(e) = create_dir_all(destination_parent) {
-                // failed creating parent directory
-                result.status = NkProvisionStateStatus::Failed;
-                result.output = format!(
-                    "{e}: failed creating parent directory: {destination_parent}",
-                );
-
-                return result;
-            };
-            result.changed = true;
+            result.append_change(
+                create_dir_all(destination_parent).map_err(|e| {
+                    format!("{e}: failed creating parent directory: {destination_parent}")
+                }),
+            )?;
         }
 
         // TODO: should support files.settings or something that we can configure a umask with, then configure that first (assuming it'll apply immediately, if not, use it to calculate perms)
@@ -225,17 +258,15 @@ fn provision_sub_file(
             // TODO: uid != 0 is to ensure we don't try to chmod /Users or other system folders... (might be a better way of handling this...)
             if existing_mode != 0o700 && metadata.uid() != 0 {
                 permissions.set_mode(0o700);
-                if let Err(e) = set_permissions(destination_parent, permissions)
-                {
-                    // failed changing permissions of parent
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed changing permissions of parent: {destination_parent}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(
+                    set_permissions(destination_parent, permissions).map_err(
+                        |e| {
+                            format!(
+                                "{e}: failed changing permissions of parent: {destination_parent}",
+                            )
+                        },
+                    ),
+                )?;
             }
         }
 
@@ -256,21 +287,19 @@ fn provision_sub_file(
                 // if not hidden
                 if (attributes & FILE_ATTRIBUTE_HIDDEN.0) == 0 {
                     // hide
-                    if let Err(e) = unsafe {
-                        SetFileAttributesW(
-                            &destination_parent.as_os_str().into(),
-                            FILE_ATTRIBUTE_HIDDEN,
-                        )
-                    } {
-                        // failed changing attributes of parent
-                        result.status = NkProvisionStateStatus::Failed;
-                        result.output = format!(
-                            "{e}: failed changing attributes of parent: {destination_parent}",
-                        );
-
-                        return result;
-                    };
-                    result.changed = true;
+                    result.append_change(
+                        unsafe {
+                            SetFileAttributesW(
+                                &destination_parent.as_os_str().into(),
+                                FILE_ATTRIBUTE_HIDDEN,
+                            )
+                        }
+                        .map_err(|e| {
+                            format!(
+                                "{e}: failed changing attributes of parent: {destination_parent}",
+                            )
+                        }),
+                    )?;
                 }
             }
         }
@@ -284,29 +313,23 @@ fn provision_sub_file(
         if !destination_file.is_dir() {
             // delete existing first
             if destination_file.exists() {
-                if let Err(e) = remove_file(destination_file) {
-                    // failed deleting existing file
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed deleting existing file: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(remove_file(destination_file).map_err(
+                    |e| {
+                        format!(
+                            "{e}: failed deleting existing file: {destination_file}",
+                        )
+                    },
+                ))?;
             }
 
             // create directory
-            if let Err(e) = create_dir_all(destination_file) {
-                // failed creating directory
-                result.status = NkProvisionStateStatus::Failed;
-                result.output = format!(
-                    "{e}: failed creating directory: {destination_file}",
-                );
-
-                return result;
-            };
-            result.changed = true;
+            result.append_change(create_dir_all(destination_file).map_err(
+                |e| {
+                    format!(
+                        "{e}: failed creating directory: {destination_file}",
+                    )
+                },
+            ))?;
         }
 
         // TODO: should support files.settings or something that we can configure a umask with, then configure that first (assuming it'll apply immediately, if not, use it to calculate perms)
@@ -323,123 +346,84 @@ fn provision_sub_file(
             // chmod directory
             if existing_mode != 0o700 {
                 permissions.set_mode(0o700);
-                if let Err(e) = set_permissions(destination_file, permissions) {
-                    // failed changing permissions of parent
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed changing permissions of directory: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(
+                    set_permissions(destination_file, permissions).map_err(
+                        |e| {
+                            format!(
+                                "{e}: failed changing permissions of directory: {destination_file}",
+                            )
+                        },
+                    ),
+                )?;
             }
         }
     } else if link_files {
         // link file
 
-        let is_linked_to = match is_linked_to(destination_file, source_file) {
-            Ok(v) => v,
-            Err(e) => {
-                // failed linking file
-                result.status = NkProvisionStateStatus::Failed;
-                result.output =
-                    format!("{e}: failed checking link: {destination_file}");
-
-                return result;
-            }
-        };
+        let is_linked_to = result.append_check(
+            is_linked_to(destination_file, source_file).map_err(|e| {
+                format!("{e}: failed checking link: {destination_file}")
+            }),
+        )?;
 
         if !is_linked_to {
             // delete existing first
             if destination_file.is_dir() {
-                if let Err(e) = remove_dir_all(destination_file) {
-                    // failed deleting existing directory
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed deleting existing directory: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(remove_dir_all(destination_file).map_err(|e| format!(
+                    "{e}: failed deleting existing directory: {destination_file}",
+                )))?;
             } else if destination_file.is_symlink() || destination_file.exists()
             {
-                if let Err(e) = remove_file(destination_file) {
-                    // failed deleting existing file
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed deleting existing file: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(remove_file(destination_file).map_err(
+                    |e| {
+                        format!(
+                            "{e}: failed deleting existing file: {destination_file}",
+                        )
+                    },
+                ))?;
             }
 
             // link file
-            if let Err(e) = symlink_file(source_file, destination_file) {
-                // failed linking file
-                result.status = NkProvisionStateStatus::Failed;
-                result.output =
-                    format!("{e}: failed linking file: {destination_file}");
-
-                return result;
-            };
-            result.changed = true;
+            result.append_change(
+                symlink_file(source_file, destination_file).map_err(|e| {
+                    format!("{e}: failed linking file: {destination_file}")
+                }),
+            )?;
         }
     } else {
         // create file
+        let file_matches = result.append_check(
+            file_contents_match(source_file, destination_file).map_err(|e| {
+                format!("{e}: failed linking file: {destination_file}")
+            }),
+        )?;
 
-        let file_matches =
-            match file_contents_match(source_file, destination_file) {
-                Ok(v) => v,
-                Err(e) => {
-                    // failed linking file
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed linking file: {destination_file}",
-                    );
-
-                    return result;
-                }
-            };
         if !file_matches {
             // delete existing first
             if destination_file.is_dir() {
-                if let Err(e) = remove_dir_all(destination_file) {
-                    // failed deleting existing directory
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed deleting existing directory: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(
+                    remove_dir_all(destination_file).map_err(|e| {
+                        format!(
+                            "{e}: failed deleting existing directory: {destination_file}",
+                        )
+                    }),
+                )?;
             } else if destination_file.is_symlink() {
-                if let Err(e) = remove_file(destination_file) {
-                    // failed deleting existing symlink
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed deleting existing symlink: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(remove_file(destination_file).map_err(
+                    |e| {
+                        format!(
+                            "{e}: failed deleting existing symlink: {destination_file}",
+                        )
+                    },
+                ))?;
             }
 
             // copy file
-            if let Err(e) = copy(source_file, destination_file) {
-                // failed copying file
-                result.status = NkProvisionStateStatus::Failed;
-                result.output =
-                    format!("{e}: failed copying file: {destination_file}");
-
-                return result;
-            };
-            result.changed = true;
+            result.append_change(
+                copy(source_file, destination_file).map_err(|e| {
+                    format!("{e}: failed copying file: {destination_file}")
+                }),
+            )?;
         }
 
         // TODO: should support files.settings or something that we can configure a umask with, then configure that first (assuming it'll apply immediately, if not, use it to calculate perms)
@@ -463,16 +447,15 @@ fn provision_sub_file(
             // chmod file
             if existing_mode != perms {
                 permissions.set_mode(perms);
-                if let Err(e) = set_permissions(destination_file, permissions) {
-                    // failed changing permissions of parent
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: failed changing permissions of file: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(
+                    set_permissions(destination_file, permissions).map_err(
+                        |e| {
+                            format!(
+                                "{e}: failed changing permissions of file: {destination_file}",
+                            )
+                        },
+                    ),
+                )?;
             }
         }
     }
@@ -494,26 +477,24 @@ fn provision_sub_file(
             // if not hidden
             if (attributes & FILE_ATTRIBUTE_HIDDEN.0) == 0 {
                 // hide
-                if let Err(e) = unsafe {
-                    SetFileAttributesW(
-                        &destination_file.as_os_str().into(),
-                        FILE_ATTRIBUTE_HIDDEN,
-                    )
-                } {
-                    // changing permissions of directory
-                    result.status = NkProvisionStateStatus::Failed;
-                    result.output = format!(
-                        "{e}: changing permissions of directory: {destination_file}",
-                    );
-
-                    return result;
-                };
-                result.changed = true;
+                result.append_change(
+                    unsafe {
+                        SetFileAttributesW(
+                            &destination_file.as_os_str().into(),
+                            FILE_ATTRIBUTE_HIDDEN,
+                        )
+                    }
+                    .map_err(|e| {
+                        format!(
+                            "{e}: failed changing attributes of directory: {destination_file}",
+                        )
+                    }),
+                )?;
             }
         }
     }
 
-    result
+    Ok(result)
 }
 
 fn is_linked_to(
