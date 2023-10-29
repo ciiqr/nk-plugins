@@ -23,6 +23,7 @@ use walkdir::WalkDir;
 #[serde(rename_all = "snake_case", tag = "declaration", content = "state")]
 enum State {
     Files(FileState),
+    Directories(#[serde(deserialize_with = "expand_path")] Utf8PathBuf),
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,7 +44,7 @@ where
     Utf8PathBuf::from_str(&shellexpand::tilde(&path)).map_err(D::Error::custom)
 }
 
-fn main() -> Result<()> {
+fn main() {
     let args = Arguments::parse();
 
     match args.command {
@@ -66,33 +67,51 @@ fn display_path_with_tilde(path: &Utf8Path) -> String {
     path_string
 }
 
-fn provision(args: Provision) -> Result<()> {
+fn print_result(result: &NkProvisionStateResult) {
+    let json = serde_json::to_string(result)
+        .expect("state results to not throw errors serializing...");
+
+    println!("{json}");
+}
+
+fn provision(args: Provision) {
     let nk_sources = args.info.sources;
 
-    let states: Vec<State> = serde_json::from_reader(stdin())?;
+    let states: Vec<State> = match serde_json::from_reader(stdin()) {
+        Ok(v) => v,
+        Err(e) => {
+            // fallback error handler for the deserialize
+            print_result(&NkProvisionStateResult {
+                status: NkProvisionStateStatus::Failed,
+                changed: false,
+                description: "files".into(),
+                output: format!("{e}: failed deserializing"),
+            });
+
+            return;
+        }
+    };
 
     for state in states {
         match state {
             State::Files(state) => {
                 if let Err(result) = provision_file(&nk_sources, &state) {
                     // fallback error handler for the provision
-                    println!(
-                        "{}",
-                        serde_json::to_string(&NkProvisionStateResult {
-                            status: NkProvisionStateStatus::Failed,
-                            changed: false,
-                            description: display_path_with_tilde(
-                                &state.destination
-                            ),
-                            output: result.to_string()
-                        })?
-                    );
+                    print_result(&NkProvisionStateResult {
+                        status: NkProvisionStateStatus::Failed,
+                        changed: false,
+                        description: display_path_with_tilde(
+                            &state.destination,
+                        ),
+                        output: result.to_string(),
+                    });
                 }
+            }
+            State::Directories(destination) => {
+                provision_directory(&destination);
             }
         };
     }
-
-    Ok(())
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -111,11 +130,7 @@ enum NkProvisionStateStatus {
 }
 
 impl NkProvisionStateResult {
-    // TODO: is there a better way of implementing this return value? I don't love the need to clone...
-    fn append_change<T>(
-        &mut self,
-        change: Result<T, String>,
-    ) -> Result<T, Self> {
+    fn append_change<T>(&mut self, change: Result<T, String>) -> Result<T, ()> {
         match change {
             Ok(v) => {
                 self.changed = true;
@@ -127,12 +142,12 @@ impl NkProvisionStateResult {
                 self.output.push_str(&e);
                 self.output.push('\n');
 
-                Err(self.clone())
+                Err(())
             }
         }
     }
 
-    fn append_check<T>(&mut self, check: Result<T, String>) -> Result<T, Self> {
+    fn append_check<T>(&mut self, check: Result<T, String>) -> Result<T, ()> {
         match check {
             Ok(v) => Ok(v),
             Err(e) => {
@@ -140,7 +155,7 @@ impl NkProvisionStateResult {
                 self.output.push_str(&e);
                 self.output.push('\n');
 
-                Err(self.clone())
+                Err(())
             }
         }
     }
@@ -195,15 +210,31 @@ fn provision_file(nk_sources: &[Utf8PathBuf], state: &FileState) -> Result<()> {
                     .join(source_file.strip_prefix(nk_source_relative_source)?)
             };
 
-            let output = match provision_sub_file(
+            let action = if !link_files || source_file.is_dir() {
+                "create"
+            } else {
+                "link"
+            };
+
+            let mut result = NkProvisionStateResult {
+                status: NkProvisionStateStatus::Success,
+                changed: false,
+                description: format!(
+                    "{action} {}",
+                    display_path_with_tilde(&destination_file)
+                ),
+                output: String::new(),
+            };
+
+            // NOTE: result is exclusively used to make it's implementation cleaner, all success/failure details are returned through the mutable result
+            let _ = provision_sub_file(
+                &mut result,
                 &source_file,
                 &destination_file,
                 *link_files,
-            ) {
-                Ok(r) | Err(r) => r,
-            };
+            );
 
-            println!("{}", serde_json::to_string(&output)?);
+            print_result(&result);
         }
     }
 
@@ -211,26 +242,11 @@ fn provision_file(nk_sources: &[Utf8PathBuf], state: &FileState) -> Result<()> {
 }
 
 fn provision_sub_file(
+    result: &mut NkProvisionStateResult,
     source_file: &Utf8Path,
     destination_file: &Utf8Path,
     link_files: bool,
-) -> Result<NkProvisionStateResult, NkProvisionStateResult> {
-    let action = if !link_files || source_file.is_dir() {
-        "create"
-    } else {
-        "link"
-    };
-
-    let mut result = NkProvisionStateResult {
-        status: NkProvisionStateStatus::Success,
-        changed: false,
-        description: format!(
-            "{action} {}",
-            display_path_with_tilde(destination_file)
-        ),
-        output: String::new(),
-    };
-
+) -> Result<(), ()> {
     // create parent directory
     if let Some(destination_parent) = destination_file.parent() {
         if !destination_parent.exists() {
@@ -309,54 +325,7 @@ fn provision_sub_file(
 
     if source_file.is_dir() {
         // create directory
-
-        if !destination_file.is_dir() {
-            // delete existing first
-            if destination_file.exists() {
-                result.append_change(remove_file(destination_file).map_err(
-                    |e| {
-                        format!(
-                            "{e}: failed deleting existing file: {destination_file}",
-                        )
-                    },
-                ))?;
-            }
-
-            // create directory
-            result.append_change(create_dir_all(destination_file).map_err(
-                |e| {
-                    format!(
-                        "{e}: failed creating directory: {destination_file}",
-                    )
-                },
-            ))?;
-        }
-
-        // TODO: should support files.settings or something that we can configure a umask with, then configure that first (assuming it'll apply immediately, if not, use it to calculate perms)
-        #[cfg(unix)]
-        {
-            use std::fs::set_permissions;
-            use std::os::unix::prelude::PermissionsExt;
-
-            let metadata =
-                destination_file.metadata().expect("accessing metadata");
-            let mut permissions = metadata.permissions();
-            let existing_mode = permissions.mode() & 0o777;
-
-            // chmod directory
-            if existing_mode != 0o700 {
-                permissions.set_mode(0o700);
-                result.append_change(
-                    set_permissions(destination_file, permissions).map_err(
-                        |e| {
-                            format!(
-                                "{e}: failed changing permissions of directory: {destination_file}",
-                            )
-                        },
-                    ),
-                )?;
-            }
-        }
+        provision_directory_impl(result, destination_file)?;
     } else if link_files {
         // link file
 
@@ -494,7 +463,68 @@ fn provision_sub_file(
         }
     }
 
-    Ok(result)
+    Ok(())
+}
+
+fn provision_directory(destination: &Utf8Path) {
+    let mut result = NkProvisionStateResult {
+        status: NkProvisionStateStatus::Success,
+        changed: false,
+        description: format!("create {}", display_path_with_tilde(destination)),
+        output: String::new(),
+    };
+
+    // NOTE: result is exclusively used to make it's implementation cleaner, all success/failure details are returned through the mutable result
+    let _ = provision_directory_impl(&mut result, destination);
+
+    print_result(&result);
+}
+
+// TODO: rename...
+fn provision_directory_impl(
+    result: &mut NkProvisionStateResult,
+    destination: &Utf8Path,
+) -> Result<(), ()> {
+    if !destination.is_dir() {
+        // delete existing first
+        if destination.exists() {
+            result.append_change(remove_file(destination).map_err(|e| {
+                format!("{e}: failed deleting existing file: {destination}")
+            }))?;
+        }
+
+        // create directory
+        result.append_change(create_dir_all(destination).map_err(|e| {
+            format!("{e}: failed creating directory: {destination}")
+        }))?;
+    }
+
+    // TODO: should support files.settings or something that we can configure a umask with, then configure that first (assuming it'll apply immediately, if not, use it to calculate perms)
+    #[cfg(unix)]
+    {
+        use std::fs::set_permissions;
+        use std::os::unix::prelude::PermissionsExt;
+
+        let metadata = destination.metadata().expect("accessing metadata");
+        let mut permissions = metadata.permissions();
+        let existing_mode = permissions.mode() & 0o777;
+
+        // chmod directory
+        if existing_mode != 0o700 {
+            permissions.set_mode(0o700);
+            result.append_change(
+                set_permissions(destination, permissions).map_err(
+                    |e| {
+                        format!(
+                            "{e}: failed changing permissions of directory: {destination}",
+                        )
+                    },
+                ),
+            )?;
+        }
+    }
+
+    Ok(())
 }
 
 fn is_linked_to(

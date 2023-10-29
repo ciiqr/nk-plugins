@@ -1,21 +1,24 @@
 name: files
 
 provision:
-  when: declaration == "files"
+  when: declaration in ["files", "directories"]
 
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
-  type: object
-  properties:
-    source:
-      type: string
-    destination:
-      type: string
-    link_files:
-      type: boolean
-  required:
-    - source
-    - destination
+  # TODO: fix this, schemas need to be associated with their relevant declarations...
+  anyOf:
+    - type: string
+    - type: object
+      properties:
+        source:
+          type: string
+        destination:
+          type: string
+        link_files:
+          type: boolean
+      required:
+        - source
+        - destination
 
 ---
 when:
