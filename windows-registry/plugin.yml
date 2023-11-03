@@ -1,0 +1,16 @@
+name: windows-registry
+when: os == "windows"
+
+provision:
+  when: declaration == "windows.registry"
+
+executable: windows-registry.ps1
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  additionalProperties:
+    anyOf:
+      - type: string
+      - type: number
+      - $ref: '#'
