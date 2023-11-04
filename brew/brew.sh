@@ -147,39 +147,15 @@ brew::provision() {
     done
 
     # get info on all packages
-    declare -a brew_info_packages=("${packages[@]}")
     declare brew_info
-    while [[ -z "$brew_info" || "$brew_info" == 'Error: No available formula'* ]]; do
-        declare exit_code='0'
-        brew_info="$(brew info --json=v2 "${brew_info_packages[@]}" 2>&1)" || exit_code="$?"
-
-        if [[ "$exit_code" == '0' ]]; then
-            break
-        fi
-
-        if [[ "$brew_info" == 'Error: No available formula'* ]]; then
-            # extract package name from error
-            declare invalid_package
-            invalid_package="$(sed -nE 's/Error: No available formula( or cask)? with the name "(.*)"\..*/\2/p' <<< "$brew_info")"
-
-            # remove invalid package so we can retry
-            for i in "${!brew_info_packages[@]}"; do
-                if [[ "${brew_info_packages[i]}" == "$invalid_package" ]]; then
-                    unset 'brew_info_packages[i]'
-                fi
-            done
-        else
-            # failed fetching package info...
-            nk::log_result \
-                'failed' \
-                'false' \
-                'fetching brew package info' \
-                "$brew_info"
-
-            # exit early since we can't do much more without package info
-            return "$exit_code"
-        fi
-    done
+    if ! nk::run_for_output brew_info brew info --json=v2 --installed; then
+        nk::log_result \
+            'failed' \
+            'false' \
+            'brew info' \
+            "$brew_info"
+        return
+    fi
 
     # provision packages
     for package in "${packages[@]}"; do
