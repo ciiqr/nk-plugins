@@ -31,9 +31,10 @@ jobs:
         run: rustup target add aarch64-apple-darwin
         if: matrix.build.target == 'aarch64-apple-darwin'
       - uses: Swatinem/rust-cache@v2
-      - name: Build # not windows
+      - name: Build
         env:
           TARGET: ${{ matrix.build.target }}
+        shell: bash
         run: |
           declare output
           output="$(
@@ -45,20 +46,6 @@ jobs:
               | jq -r '.message.rendered // .executable // empty'
           )"
           echo "ARTIFACT_PATH=$output" >> $GITHUB_ENV
-        if: runner.os != 'Windows'
-      - name: Build # windows
-        env:
-          TARGET: ${{ matrix.build.target }}
-        run: |
-          $output = cargo build `
-              --workspace `
-              --release `
-              --target "$env:TARGET" `
-              --message-format=json `
-              | jq -r '.message.rendered // .executable // empty'
-
-          "ARTIFACT_PATH=$output" | Out-File -FilePath $env:GITHUB_ENV -Append
-        if: runner.os == 'Windows'
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:

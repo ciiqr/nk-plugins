@@ -43,7 +43,6 @@ function winget_provision_package() {
     else {
         # check if update required
         $output = (winget upgrade *>&1) -join "`n"
-        # TODO: unsure if we'll consistently have spaces on both sides, but we want a complete match so... hopefully
         if ($output -like "* ${package} *") {
             # update
             $result.description = "update package ${package}"
