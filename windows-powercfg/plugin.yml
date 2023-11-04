@@ -1,0 +1,14 @@
+name: windows-powercfg
+when: os == "windows"
+
+provision:
+  when: declaration == "windows.powercfg"
+
+executable: windows-powercfg.ps1
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    plan:
+      type: string
