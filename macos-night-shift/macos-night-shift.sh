@@ -45,7 +45,7 @@ night_shift::_provision_default() {
                 "BlueReductionAvailable": true,
                 "BlueReductionEnabled": 0,
                 "BlueReductionMode": 2,
-                "BlueReductionSunScheduleAllowed": false,
+                "BlueReductionSunScheduleAllowed": true,
                 "Version": 1
             }
         }'
