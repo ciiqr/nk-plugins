@@ -24,7 +24,7 @@ function chocolatey_provision_package() {
     }
 
     # check if package installed
-    $output = (choco search --limit-output --exact --local $package *>&1) -join "`n"
+    $output = (choco list --limit-output $package *>&1) -join "`n"
     if (!($output -match "(?mi)^${package}\|.*")) {
         # install
         $result.output = (choco install --exact -y $package *>&1) -join "`n"
