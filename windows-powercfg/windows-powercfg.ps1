@@ -32,7 +32,7 @@ function powercfg_provision_plan() {
 
     if ($current_plan -ne $new_plan) {
         $result.output = (powercfg -setactive $new_plan *>&1) -join "`n"
-        if (!$?) {
+        if ($LASTEXITCODE -ne 0) {
             $result.status = "failed"
             return $result
         }

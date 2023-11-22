@@ -28,7 +28,7 @@ function chocolatey_provision_package() {
     if (!($output -match "(?mi)^${package}\|.*")) {
         # install
         $result.output = (choco install --exact -y $package *>&1) -join "`n"
-        if (!$?) {
+        if ($LASTEXITCODE -ne 0) {
             $result.status = "failed"
             return $result
         }
@@ -41,7 +41,7 @@ function chocolatey_provision_package() {
             # update
             $result.description = "update package ${package}"
             $result.output = (choco upgrade --limit-output -y $package *>&1) -join "`n"
-            if (!$?) {
+            if ($LASTEXITCODE -ne 0) {
                 $result.status = "failed"
                 return $result
             }

@@ -31,10 +31,10 @@ function winget_provision_package() {
 
     # check if package installed
     winget list --exact $package | Out-Null
-    if (!$?) {
+    if ($LASTEXITCODE -ne 0) {
         # install
         $result.output = (winget install --exact --silent $package *>&1) -join "`n"
-        if (!$?) {
+        if ($LASTEXITCODE -ne 0) {
             $result.status = "failed"
             return $result
         }
@@ -47,7 +47,7 @@ function winget_provision_package() {
             # update
             $result.description = "update package ${package}"
             $result.output = (winget upgrade --exact --silent $package *>&1) -join "`n"
-            if (!$?) {
+            if ($LASTEXITCODE -ne 0) {
                 $result.status = "failed"
                 return $result
             }
@@ -131,7 +131,6 @@ function winget_install() {
 
     # test command
     winget -v
-
 }
 
 function winget_provision_winget_cli() {
