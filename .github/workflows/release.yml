@@ -47,7 +47,7 @@ jobs:
           )"
           echo "ARTIFACT_PATH=$output" >> $GITHUB_ENV
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.build.target }}
           path: ${{ env.ARTIFACT_PATH }}
@@ -76,7 +76,7 @@ jobs:
           # add to path
           echo "${HOME}/.nk/bin" >> $GITHUB_PATH
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Move executables
