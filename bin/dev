@@ -39,7 +39,7 @@ dev::initial::setup() {
     fi
 
     echo '==> allow mise to load project directory'
-    mise trust
+    mise trust --all
 
     echo '==> dev reset'
     dev::reset
