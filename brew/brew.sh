@@ -151,8 +151,8 @@ brew::provision() {
     declare brew_info
     while [[ -z "$brew_info" || "$brew_info" == 'Error: No available formula'* ]]; do
         declare exit_code='0'
-        # TODO: fix proper
-        brew_info="$(brew info --json=v2 "${brew_info_packages[@]}" 2>/dev/null)" || exit_code="$?"
+        declare stderr=''
+        nk::run_for_separated_output brew_info stderr brew info --json=v2 "${brew_info_packages[@]}" || exit_code="$?"
 
         if [[ "$exit_code" == '0' ]]; then
             break
@@ -175,7 +175,7 @@ brew::provision() {
                 'failed' \
                 'false' \
                 'fetching brew package info' \
-                "$brew_info"
+                "${brew_info}"$'\n''---'$'\n'"${stderr}"
 
             # exit early since we can't do much more without package info
             return "$exit_code"
