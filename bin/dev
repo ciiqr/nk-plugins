@@ -76,7 +76,7 @@ dev::lint() {
 }
 
 dev::lint::fix() {
-    cargo clippy --quiet --fix --allow-staged
+    cargo clippy --quiet --fix --allow-staged --allow-dirty
     cargo fmt
 }
 
