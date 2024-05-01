@@ -14,7 +14,7 @@ brew::_provision_package() {
     package_info="$(
         jq \
             --arg 'name' "$package" \
-            '.formulae[] | select(.name == $name or .full_name == $name or any(.aliases[]; . == $name))' \
+            '.formulae[] | select(.name == $name or .full_name == $name or any(.aliases[]; . == $name) or any(.oldnames[]; . == $name))' \
             <<<"$brew_info"
     )" || return "$?"
 
