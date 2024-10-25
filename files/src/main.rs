@@ -1,6 +1,5 @@
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+#![warn(clippy::all, clippy::nursery, clippy::cargo, clippy::single_match_else)]
 #![allow(clippy::cargo_common_metadata)]
-#![allow(clippy::too_many_lines)]
 
 mod args;
 
@@ -226,7 +225,9 @@ fn provision_file(nk_sources: &[Utf8PathBuf], state: &FileState) -> Result<()> {
                 output: String::new(),
             };
 
-            // NOTE: result is exclusively used to make it's implementation cleaner, all success/failure details are returned through the mutable result
+            // NOTE: result is exclusively used to make it's implementation
+            // cleaner (so we can exit if any change fails), all success/failure
+            // details are returned through the mutable result
             let _ = provision_sub_file(
                 &mut result,
                 &source_file,
@@ -474,7 +475,9 @@ fn provision_directory(destination: &Utf8Path) {
         output: String::new(),
     };
 
-    // NOTE: result is exclusively used to make it's implementation cleaner, all success/failure details are returned through the mutable result
+    // NOTE: result is exclusively used to make it's implementation
+    // cleaner (so we can exit if any change fails), all success/failure
+    // details are returned through the mutable result
     let _ = provision_directory_impl(&mut result, destination);
 
     print_result(&result);
