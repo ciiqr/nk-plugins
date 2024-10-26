@@ -43,3 +43,9 @@ when:
   - family == "windows"
   - arch == "x86_64"
 executable: assets/x86_64-pc-windows-msvc/files.exe
+
+---
+when:
+  - family == "windows"
+  - arch == "aarch64"
+executable: assets/aarch64-pc-windows-msvc/files.exe

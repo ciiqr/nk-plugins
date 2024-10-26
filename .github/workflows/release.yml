@@ -17,19 +17,16 @@ jobs:
             os: ubuntu-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
     runs-on: ${{ matrix.build.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install target
+        run: rustup target add ${{ matrix.build.target }}
       - name: Setup musl
-        run: |
-          rustup target add x86_64-unknown-linux-musl
-          sudo apt-get install -y musl-tools
-          echo 'LDFLAGS=-Wl,--copy-dt-needed-entries' >> $GITHUB_ENV
-          echo 'RUSTFLAGS=-C target-feature=+crt-static' >> $GITHUB_ENV
-        if: matrix.build.target == 'x86_64-unknown-linux-musl'
-      - name: Setup Apple Silicon
-        run: rustup target add aarch64-apple-darwin
-        if: matrix.build.target == 'aarch64-apple-darwin'
+        run: sudo apt-get install -y musl-tools
+        if: endsWith(matrix.build.target, '-musl')
       - uses: Swatinem/rust-cache@v2
       - name: Build
         env:
@@ -45,12 +42,17 @@ jobs:
               --message-format=json \
               | jq -r '.message.rendered // .executable // empty'
           )"
-          echo "ARTIFACT_PATH=$output" >> $GITHUB_ENV
+          {
+            echo 'ARTIFACT_PATHS<<EOF'
+            echo "$output"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.build.target }}
-          path: ${{ env.ARTIFACT_PATH }}
+          path: ${{ env.ARTIFACT_PATHS }}
+          if-no-files-found: error
   release:
     name: Release
     needs: build
