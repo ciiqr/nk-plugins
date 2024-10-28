@@ -11,6 +11,7 @@ brew::_provision_package() {
     declare installed_version
     declare latest_version
     declare package_info
+    declare manual_installer
     package_info="$(
         jq \
             --arg 'name' "$package" \
@@ -29,6 +30,7 @@ brew::_provision_package() {
         installed_version="$(jq -r '.installed // empty' <<<"$package_info")" || return "$?"
         latest_version="$(jq -r '.version // empty' <<<"$package_info")" || return "$?"
         outdated="$(jq -r '.outdated // empty' <<<"$package_info")" || return "$?"
+        manual_installer="$(jq -r '.artifacts[].installer | select(. != null) | .[].manual // empty' <<<"$package_info")" || return "$?"
     fi
 
     # remove _\d$ from $installed_version (it's not there in the latest version, but the versions will otherwise match)
@@ -49,6 +51,11 @@ brew::_provision_package() {
         [[ -n "$installed_version" && -n "$latest_version"
             && "$installed_version" != "$latest_version" ]]; then
         # NOTE: version check because auto_update packages aren't shown as outdated (even that )
+
+        # manual installer packages cannot be upgraded
+        if [[ -n "$manual_installer" ]]; then
+            return
+        fi
 
         # update
         brew upgrade --no-quarantine "$package" || return "$?"
