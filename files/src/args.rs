@@ -1,6 +1,6 @@
 use anyhow::Error;
 use camino::Utf8PathBuf;
-use clap::{arg, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use serde::Deserialize;
 
 #[derive(Debug, Parser)]

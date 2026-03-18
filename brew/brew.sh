@@ -3,7 +3,7 @@
 # NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
-eval "$(nk plugin helper bash 2>/dev/null)"
+eval "$(nk plugin helper bash 2> /dev/null)"
 
 brew::_provision_package() {
     # formula
@@ -16,21 +16,21 @@ brew::_provision_package() {
         jq \
             --arg 'name' "$package" \
             '.formulae[] | select(.name == $name or .full_name == $name or any(.aliases[]; . == $name) or any(.oldnames[]; . == $name))' \
-            <<<"$brew_info"
+            <<< "$brew_info"
     )" || return "$?"
 
     if [[ -n "$package_info" ]]; then
-        installed_version="$(jq -r '.installed[0].version // empty' <<<"$package_info")" || return "$?"
-        latest_version="$(jq -r '.versions.stable // empty' <<<"$package_info")" || return "$?"
-        outdated="$(jq '.outdated' <<<"$package_info")" || return "$?"
+        installed_version="$(jq -r '.installed[0].version // empty' <<< "$package_info")" || return "$?"
+        latest_version="$(jq -r '.versions.stable // empty' <<< "$package_info")" || return "$?"
+        outdated="$(jq '.outdated' <<< "$package_info")" || return "$?"
     else
         # cask
         declare cask_name="${package##*/}"
-        package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<<"$brew_info")" || return "$?"
-        installed_version="$(jq -r '.installed // empty' <<<"$package_info")" || return "$?"
-        latest_version="$(jq -r '.version // empty' <<<"$package_info")" || return "$?"
-        outdated="$(jq -r '.outdated // empty' <<<"$package_info")" || return "$?"
-        manual_installer="$(jq -r '.artifacts[].installer | select(. != null) | .[].manual // empty' <<<"$package_info")" || return "$?"
+        package_info="$(jq --arg 'name' "$cask_name" '.casks[] | select(.token == $name)' <<< "$brew_info")" || return "$?"
+        installed_version="$(jq -r '.installed // empty' <<< "$package_info")" || return "$?"
+        latest_version="$(jq -r '.version // empty' <<< "$package_info")" || return "$?"
+        outdated="$(jq -r '.outdated // empty' <<< "$package_info")" || return "$?"
+        manual_installer="$(jq -r '.artifacts[].installer | select(. != null) | .[].manual // empty' <<< "$package_info")" || return "$?"
     fi
 
     # remove _\d$ from $installed_version (it's not there in the latest version, but the versions will otherwise match)
@@ -44,12 +44,13 @@ brew::_provision_package() {
 
     if [[ -z "$installed_version" ]]; then
         # install
-        brew install --no-quarantine "$package" || return "$?"
+        # TODO: was removed, fix ourselves... --no-quarantine
+        brew install "$package" || return "$?"
         changed='true'
         action='install'
-    elif [[ "$outdated" == 'true' ]] ||
-        [[ -n "$installed_version" && -n "$latest_version"
-            && "$installed_version" != "$latest_version" ]]; then
+    elif [[ "$outdated" == 'true' ]] \
+        || [[ -n "$installed_version" && -n "$latest_version" &&
+            "$installed_version" != "$latest_version" ]]; then
         # NOTE: version check because auto_update packages aren't shown as outdated (even that )
 
         # manual installer packages cannot be upgraded
@@ -58,14 +59,15 @@ brew::_provision_package() {
         fi
 
         # update
-        brew upgrade --no-quarantine "$package" || return "$?"
+        # TODO: was removed, fix ourselves... --no-quarantine
+        brew upgrade "$package" || return "$?"
         changed='true'
         action='update'
     fi
 }
 
 brew::_provision_brew_cli() {
-    if ! which brew >/dev/null; then
+    if ! which brew > /dev/null; then
         # install
         NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
             || return "$(nk::error "$?" 'failed installing brew cli')"
