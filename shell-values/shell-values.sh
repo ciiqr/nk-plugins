@@ -40,7 +40,7 @@ shell_values::_provision_values() {
     # create file
     if [[ "$destination_contents" != "$contents" ]]; then
         cat <<<"$contents" >"$resolved_destination" \
-            || return "$(nk::error "$?" "failed writting file: ${resolved_destination}")"
+            || return "$(nk::error "$?" "failed writing file: ${resolved_destination}")"
         changed='true'
     fi
 }
