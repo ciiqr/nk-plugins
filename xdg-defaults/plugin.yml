@@ -1,0 +1,32 @@
+name: xdg-defaults
+when:
+  - os == "linux"
+  - distro == "arch"
+
+provision:
+  when: declaration in ["default.programs", "xdg-defaults.default.programs"]
+
+executable: xdg-defaults.sh
+
+dependencies:
+  packages:
+    - extra/xdg-utils
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  # ie.
+  # web-browser
+  # inode/directory
+  # file://
+  properties:
+    web-browser:
+      type: string
+  patternProperties:
+    ^[^/]+/[^/]+$:
+      title: mime-type default
+      type: string
+    ^.*://$:
+      title: uri scheme default
+      type: string
+  additionalProperties: false

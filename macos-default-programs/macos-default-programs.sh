@@ -3,7 +3,7 @@
 # NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
-eval "$(nk plugin helper bash 2>/dev/null)"
+eval "$(nk plugin helper bash 2> /dev/null)"
 
 default_programs::_get_app_id() {
     declare app_name="$1"
@@ -31,7 +31,7 @@ default_programs::_get_app_path() {
     return 1
 }
 
-default_programs::_provision_url_schema() {
+default_programs::_provision_url_scheme() {
     declare name="${scheme%'://'}"
 
     # get bundle id
@@ -69,7 +69,7 @@ default_programs::_provision_file_extension() {
 
 default_programs::_provision_default() {
     if [[ "$scheme" == *'://' ]]; then
-        default_programs::_provision_url_schema || return "$?"
+        default_programs::_provision_url_scheme || return "$?"
     elif [[ "$scheme" == '.'* ]]; then
         default_programs::_provision_file_extension || return "$?"
     else
@@ -85,7 +85,7 @@ default_programs::provision() {
         if [[ "$app_path" == *'.app' ]]; then
             app_paths+=("$app_path")
         fi
-    done <<<"$(mdfind -literal 'kMDItemContentType==com.apple.application-bundle')"
+    done <<< "$(mdfind -literal 'kMDItemContentType==com.apple.application-bundle')"
 
     while read -r state; do
         while read -r scheme; do
