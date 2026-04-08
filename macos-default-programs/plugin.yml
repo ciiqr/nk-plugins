@@ -3,7 +3,7 @@ when: os == "macos"
 after: packages
 
 provision:
-  when: declaration == "default.programs"
+  when: declaration in ["default.programs", "macos.default.programs"]
 
 executable: macos-default-programs.sh
 
