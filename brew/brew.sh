@@ -67,6 +67,9 @@ brew::_provision_package() {
 }
 
 brew::_provision_brew_cli() {
+    # TODO: (could just do it unconditionally? would prefer to check though)
+    # sudo xcodebuild -license accept
+
     if ! which brew > /dev/null; then
         # install
         NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \

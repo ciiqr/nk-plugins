@@ -8,6 +8,12 @@ eval "$(nk plugin helper bash 2>/dev/null)"
 git_repo::_provision_repo() {
     declare destination_repo_url
     destination_repo_url="$(git -C "$resolved_destination" remote get-url origin 2>/dev/null)" # failures intentionally ignored
+    # TODO: our config has:
+    # - https://github.com/ohmyzsh/ohmyzsh.git
+    # - but our config is also converting http(s) URIs into ssh... we we need a better way of checking if they're the same...
+    # - ssh://git@github.com/ohmyzsh/ohmyzsh.git
+
+    # TODO: produce a better error if source doesn't match desintion repo url
 
     # if remote name doesn't match
     if [[ "$destination_repo_url" != "$source_" ]]; then
