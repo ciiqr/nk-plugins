@@ -3,10 +3,10 @@
 # NOTE: DOES NOT APPLY TO FUNCTIONS CALLED INSIDE IF CONDITIONS OR WITH ||/&& CHAINS
 set -e
 
-eval "$(nk plugin helper bash 2>/dev/null)"
+eval "$(nk plugin helper bash 2> /dev/null)"
 
 rustup::provision_rustup() {
-    if ! type 'rustup' >/dev/null 2>&1; then
+    if ! type 'rustup' > /dev/null 2>&1; then
         action='install'
 
         # download init script
@@ -21,11 +21,19 @@ rustup::provision_rustup() {
     else
         action='update'
 
-        declare rustup_check_output
-        rustup_check_output="$(rustup check)" \
-            || return "$(nk::error "$?" 'failed checking for updates')"
+        declare updates_available='false'
+        declare rustup_check_exit=0
+        rustup check || rustup_check_exit="$?"
+        if [[ "$rustup_check_exit" == 0 ]]; then
+            updates_available='false'
+        elif [[ "$rustup_check_exit" == 100 ]]; then
+            updates_available='true'
+        else
 
-        if [[ "$rustup_check_output" == *'Update available'* ]]; then
+            return "$(nk::error "$rustup_check_exit" 'failed checking for updates')"
+        fi
+
+        if [[ "$updates_available" == 'true' ]]; then
             rustup update \
                 || return "$(nk::error "$?" 'failed updating')"
             changed='true'
