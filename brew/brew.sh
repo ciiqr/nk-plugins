@@ -134,7 +134,10 @@ brew::provision() {
     )
     while read -r tap; do
         taps+=("$tap")
-    done <<< "$(brew tap -q)"
+    done <<< "$(brew trust --taps --json 'v1' | jq -r '.[]')"
+
+    # TODO: we can now just trust specific formulae/casks, but we'll need to
+    # determine which it is...
 
     # tap all untapped taps
     for package in "${packages[@]}"; do
@@ -144,7 +147,7 @@ brew::provision() {
                 declare output=''
                 # TODO: fix this prompting for credentials when tap doesn't exist...
                 # - GIT_TERMINAL_PROMPT=0 should prevent it, but doesn't for some reason...
-                if ! nk::run_for_output output brew tap "$tap"; then
+                if ! nk::run_for_output output brew trust "$tap"; then
                     nk::log_result \
                         'failed' \
                         'false' \
